@@ -13,6 +13,19 @@ export const ASSETS = [
   { symbol: "XOM", label: "Exxon Mobil", short: "XOM", category: "Stock" },
 ];
 
+// Tradable basket used for backtests AND live paper trading. Alpaca can't
+// trade commodity futures directly, so gold/oil/gas are represented by
+// their ETF equivalents here instead of the futures symbols above.
+export const TRADE_BASKET = [
+  { symbol: "GLD", label: "Gold (GLD)" },
+  { symbol: "USO", label: "Oil (USO)" },
+  { symbol: "UNG", label: "Natural Gas (UNG)" },
+  { symbol: "AAPL", label: "Apple" },
+  { symbol: "MSFT", label: "Microsoft" },
+  { symbol: "NVDA", label: "NVIDIA" },
+  { symbol: "XOM", label: "Exxon Mobil" },
+];
+
 export const RANGES = [
   { value: "1mo", label: "1M" },
   { value: "6mo", label: "6M" },
