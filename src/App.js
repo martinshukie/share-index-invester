@@ -3,8 +3,10 @@ import "./App.css";
 import { ASSETS, RANGES, fetchQuote } from "./assets";
 import TickerTape from "./components/TickerTape";
 import PriceChart from "./components/PriceChart";
+import HoldingsScreen from "./components/HoldingsScreen";
 import Portfolio from "./components/Portfolio";
-import CycleStrategy from "./components/CycleStrategy";
+import CombinedCycleStrategy from "./components/CombinedCycleStrategy";
+import PaperTrading from "./components/PaperTrading";
 
 const REFRESH_MS = 60000;
 
@@ -68,6 +70,10 @@ export default function App() {
         )}
       </header>
 
+      <main className="app__main">
+        <HoldingsScreen />
+      </main>
+
       <nav className="asset-tabs">
         {ASSETS.map((a) => (
           <button
@@ -99,14 +105,17 @@ export default function App() {
           <PriceChart series={series} label={asset?.label} unit={asset?.unit} />
         )}
 
-        {!loading && !error && series && <CycleStrategy series={series} label={asset?.label} />}
+        <CombinedCycleStrategy range={range} />
+
+        <PaperTrading />
 
         <Portfolio range={range} />
       </main>
 
       <footer className="app__footer">
         Educational / research tool only — not financial advice. Prices are delayed, free-tier
-        market data. Not connected to any brokerage — no real trades are placed.
+        market data. Not connected to any real bank account — "Add funds" only affects the
+        simulated paper trading balance.
       </footer>
     </div>
   );
