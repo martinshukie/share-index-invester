@@ -117,233 +117,240 @@
   border-bottom: none !important;
 }
 
-/* ---------- Asset tabs ---------- */
-.asset-tabs {
-  display: flex;
-  gap: 8px;
-  padding: 16px 20px 0;
-  overflow-x: auto;
-}
-
-.asset-tabs__tab {
-  flex: none;
-  background: var(--surface);
-  border: 1px solid var(--hairline);
-  color: var(--text-dim);
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 13px;
-  padding: 8px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.asset-tabs__tab--on {
-  color: var(--bg);
-  background: var(--gold);
-  border-color: var(--gold);
-  font-weight: 600;
-}
-
-/* ---------- Range select ---------- */
-.range-select {
-  display: flex;
-  gap: 6px;
-  padding: 12px 20px 0;
-}
-
-.range-select__btn {
-  background: transparent;
-  border: none;
-  color: var(--text-dim);
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 12px;
-  padding: 4px 10px;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.range-select__btn--on {
-  color: var(--text);
-  background: var(--surface-2);
-}
-
-/* ---------- Main / chart ---------- */
-.app__main {
-  padding: 20px;
-  max-width: 720px;
-  margin: 0 auto;
-}
-
-.loading, .error, .chart-empty {
-  color: var(--text-dim);
-  padding: 40px 0;
-  text-align: center;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 13px;
-}
-
-.error { color: var(--down); }
-
-.price-chart {
+/* ---------- Holdings screen ---------- */
+.holdings {
   background: var(--surface);
   border: 1px solid var(--hairline);
   border-radius: 12px;
   padding: 20px;
+  margin-bottom: 24px;
 }
 
-.price-chart__head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-
-.price-chart__label {
+.holdings__label {
   color: var(--text-dim);
   font-size: 13px;
 }
 
-.price-chart__price {
+.holdings__value {
   font-family: "IBM Plex Mono", monospace;
-  font-size: 30px;
-  font-weight: 600;
-  line-height: 1.2;
+  font-size: 36px;
+  font-weight: 700;
+  margin: 6px 0 8px;
 }
 
-.price-chart__unit {
-  font-size: 14px;
-  color: var(--text-dim);
-  font-weight: 400;
-}
-
-.price-chart__change {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 14px;
-  text-align: right;
-}
-
-.price-chart__change.up { color: var(--up); }
-.price-chart__change.down { color: var(--down); }
-
-.price-chart__range {
-  color: var(--text-dim);
-  font-size: 11px;
-  margin-top: 4px;
-}
-
-.price-chart__svg {
-  width: 100%;
-  height: 200px;
-  display: block;
-}
-
-/* ---------- Portfolio ---------- */
-.portfolio {
-  margin-top: 24px;
-  background: var(--surface);
-  border: 1px solid var(--hairline);
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.portfolio__intro h3 {
-  margin: 0 0 6px;
-  font-family: "IBM Plex Mono", monospace;
-  color: var(--gold);
-  font-size: 16px;
-}
-
-.portfolio__intro p {
-  color: var(--text-dim);
-  font-size: 13px;
-  line-height: 1.5;
-  margin: 0 0 16px;
-}
-
-.portfolio__picker {
+.holdings__badges {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 16px;
 }
 
-.chip {
+.holdings__badge {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--surface-2);
+}
+
+.holdings__badge.up { color: var(--up); }
+.holdings__badge.down { color: var(--down); }
+
+.holdings__ranges {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+}
+
+.holdings__range-btn {
   background: var(--surface-2);
   border: 1px solid var(--hairline);
   color: var(--text-dim);
   font-family: "IBM Plex Mono", monospace;
   font-size: 12px;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 20px;
   cursor: pointer;
+  flex: none;
 }
 
-.chip--on {
+.holdings__range-btn--on {
   background: var(--gold);
   border-color: var(--gold);
   color: var(--bg);
   font-weight: 600;
 }
 
-.btn {
-  background: var(--gold);
-  color: var(--bg);
-  border: none;
-  font-family: "IBM Plex Mono", monospace;
-  font-weight: 600;
-  font-size: 13px;
-  padding: 10px 18px;
-  border-radius: 8px;
-  cursor: pointer;
+.holdings-chart {
+  margin: 12px 0 20px;
 }
 
-.btn:disabled {
-  opacity: 0.5;
-  cursor: default;
+.holdings-chart__svg {
+  width: 100%;
+  height: 180px;
+  display: block;
 }
 
-.portfolio__error {
-  color: var(--down);
-  font-size: 13px;
-  margin-top: 12px;
-}
-
-.portfolio__result {
+.holdings-list__head {
   display: flex;
-  gap: 32px;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--hairline);
-}
-
-.portfolio__stat-label {
-  color: var(--text-dim);
-  font-size: 12px;
-  margin-bottom: 4px;
-}
-
-.portfolio__stat-value {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.portfolio__stat-value.up { color: var(--up); }
-.portfolio__stat-value.down { color: var(--down); }
-
-/* ---------- Footer ---------- */
-.app__footer {
-  max-width: 720px;
-  margin: 32px auto 0;
-  padding: 16px 20px 0;
+  justify-content: space-between;
   color: var(--text-dim);
   font-size: 11px;
-  line-height: 1.5;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.holdings-list__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--hairline);
+  gap: 12px;
+}
+
+.holdings-list__symbol {
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 600;
+  flex: 0 0 70px;
+}
+
+.holdings-list__bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.holdings-list__bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  overflow: hidden;
+  display: block;
+}
+
+.holdings-list__bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--up);
+  border-radius: 3px;
+}
+
+.holdings-list__pct {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.holdings-list__value {
+  text-align: right;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  flex: 0 0 90px;
+}
+
+.holdings-list__value-usd {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.holdings-list__empty {
+  color: var(--text-dim);
+  font-size: 13px;
+  padding: 20px 0;
+  text-align: center;
+}
+
+/* ---------- Add funds ---------- */
+.add-funds {
+  margin-top: 24px;
+  padding-top: 20px;
   border-top: 1px solid var(--hairline);
 }
 
-/* ---------- Focus visibility ---------- */
-button:focus-visible {
-  outline: 2px solid var(--gold);
-  outline-offset: 2px;
+.add-funds h4 {
+  margin: 0 0 6px;
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--gold);
+  font-size: 14px;
 }
+
+.add-funds__note {
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+
+.add-funds__input {
+  display: block;
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  color: var(--text);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+/* ---------- Asset table ---------- */
+.asset-table {
+  margin-top: 16px;
+  overflow-x: auto;
+}
+
+.asset-table__head,
+.asset-table__row {
+  display: grid;
+  grid-template-columns: 70px 90px 90px 70px auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.asset-table__head {
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+.asset-table__symbol {
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 600;
+}
+
+.asset-table__amount {
+  width: 60px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  color: var(--text);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+.asset-table__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn--small {
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+/* ---------- Asset tabs ---------- */
+.asset-tabs {
+  display: flex;
+  gap: 8px;
+  padding:
