@@ -185,7 +185,7 @@ export default function CombinedCycleStrategy({ range }) {
                   {e.type === "tier1-bank" && (
                     <>banked ${e.banked.toFixed(2)} (tier 1), reinvested ${e.reinvested.toFixed(2)}</>
                   )}
-                  {e.type === "tier2-reinvest" && <>reinvested — value hit ${e.value.toFixed(2)}</>
+                  {e.type === "tier2-reinvest" && <>reinvested — value hit ${e.value.toFixed(2)}</>}
                   {e.type === "tier2-bank" && (
                     <>
                       banked ${e.banked.toFixed(2)} (tier 2), reinvested ${e.reinvested.toFixed(2)}{" "}
