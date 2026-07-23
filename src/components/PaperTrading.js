@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from "react";
+import { useTradeSecret } from "../useTradeSecret";
 
 export default function PaperTrading() {
   const [status, setStatus] = useState(null);
   const [error, setError] = useState(null);
-  const [secret, setSecret] = useState("");
   const [amount, setAmount] = useState("250");
   const [addFundsResult, setAddFundsResult] = useState(null);
   const [addingFunds, setAddingFunds] = useState(false);
+  const [typedSecret, setTypedSecret] = useState("");
+
+  const ts = useTradeSecret();
 
   useEffect(() => {
     let cancelled = false;
@@ -33,6 +36,7 @@ export default function PaperTrading() {
   }, []);
 
   async function addFunds() {
+    const secret = ts.secret;
     if (!secret || !amount) return;
     setAddingFunds(true);
     setAddFundsResult(null);
@@ -84,6 +88,12 @@ export default function PaperTrading() {
                 {status.totalHoldingsValue != null ? `$${status.totalHoldingsValue.toFixed(2)}` : "—"}
               </div>
             </div>
+            <div>
+              <div className="portfolio__stat-label">Strategy banked</div>
+              <div className="portfolio__stat-value up">
+                {status.strategyBanked != null ? `$${status.strategyBanked.toFixed(2)}` : "—"}
+              </div>
+            </div>
           </div>
 
           {status.recentOrders?.length > 0 && (
@@ -106,29 +116,69 @@ export default function PaperTrading() {
         <h4>Add funds (simulated)</h4>
         <p className="add-funds__note">
           This is not a real bank connection — it adds simulated money to your Alpaca paper
-          account only, split evenly across the basket. Your trade secret is only kept in this
-          page's memory, never saved or committed anywhere.
+          account only, split evenly across the basket.
         </p>
-        <input
-          type="password"
-          placeholder="Trade secret"
-          value={secret}
-          onChange={(e) => setSecret(e.target.value)}
-          className="add-funds__input"
-        />
-        <input
-          type="number"
-          placeholder="Amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className="add-funds__input"
-        />
-        <button className="btn" onClick={addFunds} disabled={addingFunds || !secret || !amount}>
-          {addingFunds ? "Adding…" : "Add funds"}
-        </button>
-        {addFundsResult && (
-          <p className={addFundsResult.ok ? "portfolio__stat-value up" : "portfolio__error"}>
-            {addFundsResult.message}
+
+        {ts.error && <p className="portfolio__error">{ts.error}</p>}
+
+        {!ts.hasSaved && (
+          <>
+            <input
+              type="password"
+              placeholder="Trade secret (saved once on this device)"
+              value={typedSecret}
+              onChange={(e) => setTypedSecret(e.target.value)}
+              className="add-funds__input"
+            />
+            <button
+              className="btn"
+              disabled={ts.busy || !typedSecret}
+              onClick={() => ts.saveWithBiometric(typedSecret)}
+            >
+              {ts.busy ? "Setting up…" : "Save & enable biometric unlock"}
+            </button>
+          </>
+        )}
+
+        {ts.hasSaved && !ts.secret && (
+          <button className="btn" disabled={ts.busy} onClick={() => ts.unlock()}>
+            {ts.busy ? "Checking…" : "🔓 Unlock with biometric"}
+          </button>
+        )}
+
+        {ts.hasSaved && ts.secret && (
+          <>
+            <input
+              type="number"
+              placeholder="Amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="add-funds__input"
+            />
+            <button className="btn" onClick={addFunds} disabled={addingFunds || !amount}>
+              {addingFunds ? "Adding…" : "Add funds"}
+            </button>{" "}
+            <button className="btn btn--small" onClick={ts.lock}>
+              Lock
+            </button>
+            {addFundsResult && (
+              <p className={addFundsResult.ok ? "portfolio__stat-value up" : "portfolio__error"}>
+                {addFundsResult.message}
+              </p>
+            )}
+          </>
+        )}
+
+        {ts.hasSaved && (
+          <p style={{ marginTop: 10 }}>
+            <button
+              className="btn btn--small"
+              onClick={() => {
+                if (window.confirm("Forget the saved secret on this device?")) ts.forget();
+              }}
+            >
+              Forget saved secret
+            </button>
           </p>
         )}
       </div>
