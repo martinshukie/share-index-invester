@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { TRADE_BASKET } from "../assets";
 import { useTradeSecret } from "../useTradeSecret";
 
-export default function AssetTable() {
+export default function AssetTable({ basket = "main", symbols = [] }) {
   const [status, setStatus] = useState(null);
   const [error, setError] = useState(null);
   const [busySymbol, setBusySymbol] = useState(null);
@@ -13,7 +12,7 @@ export default function AssetTable() {
   const ts = useTradeSecret();
 
   function load() {
-    fetch("/api/trade-status")
+    fetch(`/api/trade-status?basket=${basket}`)
       .then((r) => r.json())
       .then((d) => (d.error ? setError(d.error) : (setStatus(d), setError(null))))
       .catch(() => setError("Couldn't reach the trading account."));
@@ -23,7 +22,7 @@ export default function AssetTable() {
     load();
     const id = setInterval(load, 60000);
     return () => clearInterval(id);
-  }, []);
+  }, [basket]);
 
   async function act(action, symbol) {
     const secret = ts.secret;
@@ -54,7 +53,7 @@ export default function AssetTable() {
     }
   }
 
-  const rows = status?.allHoldings || TRADE_BASKET.map((a) => ({ symbol: a.symbol, marketValue: 0, banked: 0 }));
+  const rows = status?.allHoldings || symbols.map((s) => ({ symbol: s, marketValue: 0, banked: 0, avgEntryPrice: 0 }));
 
   return (
     <div className="portfolio">
@@ -105,6 +104,7 @@ export default function AssetTable() {
         <div className="asset-table__head">
           <span>Asset</span>
           <span>Current Value</span>
+          <span>Purchased At</span>
           <span>Banked</span>
           <span>Amount</span>
           <span></span>
@@ -113,6 +113,7 @@ export default function AssetTable() {
           <div className="asset-table__row" key={h.symbol}>
             <span className="asset-table__symbol">{h.symbol}</span>
             <span>${h.marketValue.toFixed(2)}</span>
+            <span>{h.avgEntryPrice ? `$${h.avgEntryPrice.toFixed(2)}` : "—"}</span>
             <span className="up">${h.banked.toFixed(2)}</span>
             <input
               type="number"
