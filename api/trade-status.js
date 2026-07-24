@@ -1,8 +1,12 @@
-// Read-only view of the paper trading account, for the dashboard to poll.
-// Cannot place trades - only trade-run.js / asset-fund.js / asset-bank.js
-// (all secret-protected) can do that.
+// Read-only view of a paper trading basket, for the dashboard to poll.
+// ?basket=main or ?basket=ai selects which independent basket to report on
+// (defaults to main). Cannot place trades - only trade-run.js /
+// asset-fund.js / asset-bank.js (all secret-protected) can do that.
 
-const TRADE_BASKET = ["GLD", "USO", "UNG", "AAPL", "MSFT", "NVDA", "XOM"];
+const BASKETS = {
+  main: ["GLD", "USO", "AAPL", "MSFT", "NVDA", "XOM"],
+  ai: ["NBIS", "CRWV", "AVGO"],
+};
 
 function alpacaHeaders() {
   return {
@@ -18,19 +22,19 @@ async function getPosition(base, symbol) {
   return r.json();
 }
 
-function computeBanked(orders) {
+function computeBanked(orders, basketSymbols) {
   let total = 0;
   const bySymbol = {};
-  TRADE_BASKET.forEach((s) => (bySymbol[s] = 0));
+  basketSymbols.forEach((s) => (bySymbol[s] = 0));
   for (const o of orders) {
     const id = o.client_order_id || "";
     if (id.startsWith("bank-")) {
       const parts = id.split("-");
       const amt = parseFloat(parts[1]);
       const symbol = parts[2];
-      if (!isNaN(amt)) {
+      if (!isNaN(amt) && bySymbol[symbol] != null) {
         total += amt;
-        if (bySymbol[symbol] != null) bySymbol[symbol] += amt;
+        bySymbol[symbol] += amt;
       }
     }
   }
@@ -43,6 +47,8 @@ export default async function handler(req, res) {
     return;
   }
 
+  const basketName = req.query.basket === "ai" ? "ai" : "main";
+  const basketSymbols = BASKETS[basketName];
   const base = process.env.APCA_API_BASE_URL || "https://paper-api.alpaca.markets";
 
   try {
@@ -50,15 +56,15 @@ export default async function handler(req, res) {
       fetch(`${base}/v2/account`, { headers: alpacaHeaders() }),
       fetch(`${base}/v2/orders?status=all&limit=500&direction=desc`, { headers: alpacaHeaders() }),
       fetch(`${base}/v2/orders?status=all&limit=10&direction=desc`, { headers: alpacaHeaders() }),
-      ...TRADE_BASKET.map((symbol) => getPosition(base, symbol)),
+      ...basketSymbols.map((symbol) => getPosition(base, symbol)),
     ]);
 
     const account = accountRes.ok ? await accountRes.json() : null;
     const allOrders = allOrdersRes.ok ? await allOrdersRes.json() : [];
     const recentOrders = recentOrdersRes.ok ? await recentOrdersRes.json() : [];
-    const banked = computeBanked(allOrders);
+    const banked = computeBanked(allOrders, basketSymbols);
 
-    const holdings = TRADE_BASKET.map((symbol, i) => {
+    const holdings = basketSymbols.map((symbol, i) => {
       const p = positionResults[i];
       return {
         symbol,
@@ -66,14 +72,17 @@ export default async function handler(req, res) {
         marketValue: p ? parseFloat(p.market_value) : 0,
         costBasis: p ? parseFloat(p.cost_basis) : 0,
         unrealizedPl: p ? parseFloat(p.unrealized_pl) : 0,
+        avgEntryPrice: p ? parseFloat(p.avg_entry_price) : 0,
         banked: banked.bySymbol[symbol] || 0,
       };
     });
 
     const totalHoldingsValue = holdings.reduce((sum, h) => sum + h.marketValue, 0);
+    const basketRecentOrders = recentOrders.filter((o) => basketSymbols.includes(o.symbol));
 
     res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=60");
     res.status(200).json({
+      basket: basketName,
       cash: account ? parseFloat(account.cash) : null,
       equity: account ? parseFloat(account.equity) : null,
       holdings: holdings.filter((h) => h.marketValue > 0 || h.banked > 0),
@@ -81,7 +90,7 @@ export default async function handler(req, res) {
       totalHoldingsValue,
       strategyBanked: banked.total,
       strategyWealth: banked.total + totalHoldingsValue,
-      recentOrders: recentOrders.slice(0, 10).map((o) => ({
+      recentOrders: basketRecentOrders.slice(0, 10).map((o) => ({
         id: o.id,
         symbol: o.symbol,
         side: o.side,
