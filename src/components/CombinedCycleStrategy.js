@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import PriceChart from "./PriceChart";
-import { TRADE_BASKET, fetchQuote } from "../assets";
+import { fetchQuote } from "../assets";
 
 const START_STAKE = 250;
 const TIER1_TARGET = 300;
@@ -77,8 +77,8 @@ function runTieredBacktest(seriesBySymbol, symbols) {
   return { wealthSeries, events, banked, finalPositionValue, usedSymbols: usable };
 }
 
-export default function CombinedCycleStrategy({ range }) {
-  const [selected, setSelected] = useState(TRADE_BASKET.map((a) => a.symbol));
+export default function CombinedCycleStrategy({ range, basket, title = "Combined basket strategy (tiered)" }) {
+  const [selected, setSelected] = useState(basket.map((a) => a.symbol));
   const [seriesBySymbol, setSeriesBySymbol] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -119,7 +119,7 @@ export default function CombinedCycleStrategy({ range }) {
   return (
     <div className="portfolio">
       <div className="portfolio__intro">
-        <h3>Combined basket strategy (tiered)</h3>
+        <h3>{title}</h3>
         <p>
           $250 split evenly across the basket. Below $500 total: bank $50 whenever the combined
           position hits $300, reinvest the rest evenly. From $500 up: double-then-bank-50%-at-
@@ -129,7 +129,7 @@ export default function CombinedCycleStrategy({ range }) {
       </div>
 
       <div className="portfolio__picker">
-        {TRADE_BASKET.map((a) => (
+        {basket.map((a) => (
           <button
             key={a.symbol}
             className={`chip ${selected.includes(a.symbol) ? "chip--on" : ""}`}
