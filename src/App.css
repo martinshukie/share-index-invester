@@ -307,7 +307,7 @@
 .asset-table__head,
 .asset-table__row {
   display: grid;
-  grid-template-columns: 70px 90px 90px 70px auto;
+  grid-template-columns: 70px 90px 90px 90px 70px auto;
   gap: 10px;
   align-items: center;
   padding: 10px 0;
@@ -353,4 +353,45 @@
 .asset-tabs {
   display: flex;
   gap: 8px;
-  padding:
+  padding: 16px 20px 0;
+  overflow-x: auto;
+}
+
+.asset-tabs__tab {
+  flex: none;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  color: var(--text-dim);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.asset-tabs__tab--on {
+  color: var(--bg);
+  background: var(--gold);
+  border-color: var(--gold);
+  font-weight: 600;
+}
+
+/* ---------- Range select ---------- */
+.range-select {
+  display: flex;
+  gap: 6px;
+  padding: 12px 20px 0;
+}
+
+.range-select__btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.range-select__bt
