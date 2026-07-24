@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useCallback } from "react";
 import "./App.css";
-import { ASSETS, RANGES, fetchQuote } from "./assets";
+import { ASSETS, RANGES, TRADE_BASKET, AI_BASKET, fetchQuote } from "./assets";
 import TickerTape from "./components/TickerTape";
 import PriceChart from "./components/PriceChart";
 import HoldingsScreen from "./components/HoldingsScreen";
 import Portfolio from "./components/Portfolio";
 import CombinedCycleStrategy from "./components/CombinedCycleStrategy";
 import PaperTrading from "./components/PaperTrading";
+import AssetTable from "./components/AssetTable";
 
 const REFRESH_MS = 60000;
 
@@ -32,9 +33,6 @@ export default function App() {
     });
   }, []);
 
-  // Load current price + change for every tracked asset, then keep it fresh
-  // every 60 seconds. This only refreshes *current* prices - historical
-  // backtests below use fixed historical data and don't change on refresh.
   useEffect(() => {
     refreshQuotes();
     const id = setInterval(refreshQuotes, REFRESH_MS);
@@ -62,7 +60,7 @@ export default function App() {
 
       <header className="app__header">
         <h1>Builder</h1>
-        <p className="app__tagline">Markets research dashboard — gold, oil, gas &amp; equities</p>
+        <p className="app__tagline">Markets research dashboard — gold, oil, equities &amp; AI</p>
         {lastUpdated && (
           <p className="app__updated">
             Live prices updated {lastUpdated.toLocaleTimeString()} · refreshes every 60s
@@ -105,9 +103,15 @@ export default function App() {
           <PriceChart series={series} label={asset?.label} unit={asset?.unit} />
         )}
 
-        <CombinedCycleStrategy range={range} />
+        <h2 className="section-heading">Main basket — gold, oil &amp; equities</h2>
+        <CombinedCycleStrategy range={range} basket={TRADE_BASKET} title="Main basket strategy (tiered)" />
+        <PaperTrading basket="main" title="Main basket — paper trading account" />
+        <AssetTable basket="main" symbols={TRADE_BASKET.map((a) => a.symbol)} />
 
-        <PaperTrading />
+        <h2 className="section-heading">AI basket — separate strategy</h2>
+        <CombinedCycleStrategy range={range} basket={AI_BASKET} title="AI basket strategy (tiered)" />
+        <PaperTrading basket="ai" title="AI basket — paper trading account" />
+        <AssetTable basket="ai" symbols={AI_BASKET.map((a) => a.symbol)} />
 
         <Portfolio range={range} />
       </main>
@@ -115,7 +119,8 @@ export default function App() {
       <footer className="app__footer">
         Educational / research tool only — not financial advice. Prices are delayed, free-tier
         market data. Not connected to any real bank account — "Add funds" only affects the
-        simulated paper trading balance.
+        simulated paper trading balance. The main and AI baskets run as fully independent
+        strategies with separate banked totals.
       </footer>
     </div>
   );
