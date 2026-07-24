@@ -1,10 +1,12 @@
 // Executes the tiered take-profit / reinvestment cycle against a real
-// Alpaca PAPER trading account (simulated money, real market behavior),
-// across the whole basket at once (combined total, not per-asset).
+// Alpaca PAPER trading account, for ONE of two fully independent baskets
+// selected via ?basket=main or ?basket=ai. Each basket has its own banked
+// total (kept separate because their symbols never overlap) and needs its
+// own scheduled trigger - see PAPER_TRADING_SETUP.md.
 //
 // Rule (mirrors src/components/CombinedCycleStrategy.js):
-//  - no positions yet -> open $250 split evenly across the basket
-//  - combined wealth (banked + current basket value) under $500:
+//  - no positions yet in this basket -> open $250 split evenly across it
+//  - combined wealth (this basket's banked + current value) under $500:
 //      when the basket's current value hits $300, bank $50, reinvest the
 //      rest evenly across the basket
 //  - combined wealth $500 or more:
@@ -13,20 +15,18 @@
 //      50%, reinvest the other 50%, repeat
 //  - otherwise -> hold, do nothing
 //
-// No external database is used. "Cycle start value" comes from Alpaca's
-// own cost-basis on the held positions (accurate because every reset here
-// fully closes and reopens the basket). "Total banked" is reconstructed by
-// reading order history for orders tagged with a bank-<amount>-<timestamp>
-// client_order_id, rather than trusting the account's raw cash balance
-// (which starts with a large simulated cushion unrelated to this
-// strategy).
+// No external database is used. "Total banked" for a basket is
+// reconstructed by reading order history for orders tagged with a
+// bank-<amount>-<symbol>-<timestamp> client_order_id, filtered to that
+// basket's own symbols.
 //
-// This endpoint must be called by something on a schedule (see
-// PAPER_TRADING_SETUP.md) - it does not run on its own. It requires a
-// ?secret= query param matching TRADE_CRON_SECRET so random visitors can't
-// trigger trades on your account.
+// Requires a ?secret= query param matching TRADE_CRON_SECRET.
 
-const TRADE_BASKET = ["GLD", "USO", "UNG", "AAPL", "MSFT", "NVDA", "XOM"];
+const BASKETS = {
+  main: ["GLD", "USO", "AAPL", "MSFT", "NVDA", "XOM"],
+  ai: ["NBIS", "CRWV", "AVGO"],
+};
+
 const START_STAKE = 250;
 const TIER1_TARGET = 300;
 const TIER1_BANK = 50;
@@ -75,7 +75,7 @@ async function buyNotional(base, symbol, notional, clientOrderId) {
   return r.json();
 }
 
-async function getTotalBanked(base) {
+async function getTotalBanked(base, basketSymbols) {
   const r = await fetch(`${base}/v2/orders?status=all&limit=500&direction=desc`, {
     headers: alpacaHeaders(),
   });
@@ -87,19 +87,20 @@ async function getTotalBanked(base) {
     if (id.startsWith("bank-")) {
       const parts = id.split("-");
       const amt = parseFloat(parts[1]);
-      if (!isNaN(amt)) total += amt;
+      const symbol = parts[2];
+      if (!isNaN(amt) && basketSymbols.includes(symbol)) total += amt;
     }
   }
   return total;
 }
 
-async function closeAndReopenEvenly(base, heldSymbols, reinvestValue, bankAmount) {
+async function closeAndReopenEvenly(base, basketSymbols, heldSymbols, reinvestValue, bankAmount) {
   await Promise.all(heldSymbols.map((s) => closePosition(base, s)));
-  const perAsset = reinvestValue / TRADE_BASKET.length;
-  const perAssetBank = bankAmount ? bankAmount / TRADE_BASKET.length : 0;
+  const perAsset = reinvestValue / basketSymbols.length;
+  const perAssetBank = bankAmount ? bankAmount / basketSymbols.length : 0;
   const ts = Date.now();
   const orders = [];
-  for (const symbol of TRADE_BASKET) {
+  for (const symbol of basketSymbols) {
     const id = bankAmount ? `bank-${perAssetBank.toFixed(4)}-${symbol}-${ts}` : undefined;
     orders.push(await buyNotional(base, symbol, perAsset, id));
   }
@@ -117,32 +118,35 @@ export default async function handler(req, res) {
     return;
   }
 
+  const basketName = req.query.basket === "ai" ? "ai" : "main";
+  const basketSymbols = BASKETS[basketName];
   const base = process.env.APCA_API_BASE_URL || "https://paper-api.alpaca.markets";
 
   try {
-    const positions = await Promise.all(TRADE_BASKET.map((s) => getPosition(base, s)));
-    const held = TRADE_BASKET.filter((_, i) => positions[i] !== null);
+    const positions = await Promise.all(basketSymbols.map((s) => getPosition(base, s)));
+    const held = basketSymbols.filter((_, i) => positions[i] !== null);
 
     if (held.length === 0) {
-      const perAsset = START_STAKE / TRADE_BASKET.length;
+      const perAsset = START_STAKE / basketSymbols.length;
       const orders = [];
-      for (const symbol of TRADE_BASKET) {
+      for (const symbol of basketSymbols) {
         orders.push(await buyNotional(base, symbol, perAsset));
       }
-      res.status(200).json({ action: "opened_initial_basket", notional: START_STAKE, orders });
+      res.status(200).json({ basket: basketName, action: "opened_initial_basket", notional: START_STAKE, orders });
       return;
     }
 
     const currentValue = positions.reduce((sum, p) => (p ? sum + parseFloat(p.market_value) : sum), 0);
     const cycleStartValue = positions.reduce((sum, p) => (p ? sum + parseFloat(p.cost_basis) : sum), 0);
-    const totalBanked = await getTotalBanked(base);
+    const totalBanked = await getTotalBanked(base, basketSymbols);
     const wealth = totalBanked + currentValue;
 
     if (wealth < TIER1_CEILING) {
       if (currentValue >= TIER1_TARGET) {
         const reinvestValue = currentValue - TIER1_BANK;
-        const orders = await closeAndReopenEvenly(base, held, reinvestValue, TIER1_BANK);
+        const orders = await closeAndReopenEvenly(base, basketSymbols, held, reinvestValue, TIER1_BANK);
         res.status(200).json({
+          basket: basketName,
           action: "tier1_bank",
           banked: TIER1_BANK,
           reinvested: reinvestValue,
@@ -151,38 +155,20 @@ export default async function handler(req, res) {
         });
         return;
       }
-      res.status(200).json({ action: "hold", tier: 1, currentValue, target: TIER1_TARGET, wealth });
+      res.status(200).json({ basket: basketName, action: "hold", tier: 1, currentValue, target: TIER1_TARGET, wealth });
       return;
     }
 
     if (currentValue >= cycleStartValue * 2) {
       if (currentValue < TIER2_BANK_THRESHOLD) {
-        const orders = await closeAndReopenEvenly(base, held, currentValue, null);
-        res.status(200).json({ action: "tier2_reinvest", value: currentValue, orders });
+        const orders = await closeAndReopenEvenly(base, basketSymbols, held, currentValue, null);
+        res.status(200).json({ basket: basketName, action: "tier2_reinvest", value: currentValue, orders });
         return;
       }
       const bankAmt = currentValue * 0.5;
       const reinvestValue = currentValue - bankAmt;
-      const orders = await closeAndReopenEvenly(base, held, reinvestValue, bankAmt);
+      const orders = await closeAndReopenEvenly(base, basketSymbols, held, reinvestValue, bankAmt);
       res.status(200).json({
+        basket: basketName,
         action: "tier2_bank",
-        banked: bankAmt,
-        reinvested: reinvestValue,
-        totalBanked: totalBanked + bankAmt,
-        orders,
-      });
-      return;
-    }
-
-    res.status(200).json({
-      action: "hold",
-      tier: 2,
-      currentValue,
-      cycleStartValue,
-      neededToDouble: cycleStartValue * 2,
-      wealth,
-    });
-  } catch (err) {
-    res.status(500).json({ error: String(err) });
-  }
-}
+        banked:
