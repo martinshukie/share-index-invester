@@ -1,9 +1,12 @@
-// Adds simulated funds to the paper account by buying evenly across the
-// trading basket. This does NOT touch any real bank account - it only
-// works within Alpaca's simulated paper-trading balance.
+// Adds simulated funds to a paper account basket by buying evenly across
+// it. ?basket=main or ?basket=ai selects which (defaults to main). Does
+// NOT touch any real bank account - simulated paper balance only.
 // Protected by the same secret as trade-run.js.
 
-const TRADE_BASKET = ["GLD", "USO", "UNG", "AAPL", "MSFT", "NVDA", "XOM"];
+const BASKETS = {
+  main: ["GLD", "USO", "AAPL", "MSFT", "NVDA", "XOM"],
+  ai: ["NBIS", "CRWV", "AVGO"],
+};
 
 function alpacaHeaders() {
   return {
@@ -42,14 +45,16 @@ export default async function handler(req, res) {
     return;
   }
 
+  const basketName = req.query.basket === "ai" ? "ai" : "main";
+  const basketSymbols = BASKETS[basketName];
   const base = process.env.APCA_API_BASE_URL || "https://paper-api.alpaca.markets";
-  const perAsset = amount / TRADE_BASKET.length;
+  const perAsset = amount / basketSymbols.length;
 
   try {
     const orders = await Promise.all(
-      TRADE_BASKET.map((symbol) => buyNotional(base, symbol, perAsset))
+      basketSymbols.map((symbol) => buyNotional(base, symbol, perAsset))
     );
-    res.status(200).json({ action: "funds_added", amount, perAsset, orders });
+    res.status(200).json({ basket: basketName, action: "funds_added", amount, perAsset, orders });
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
