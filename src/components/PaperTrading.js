@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useTradeSecret } from "../useTradeSecret";
 
-export default function PaperTrading() {
+export default function PaperTrading({ basket = "main", title = "Paper trading account (live, simulated money)" }) {
   const [status, setStatus] = useState(null);
   const [error, setError] = useState(null);
   const [amount, setAmount] = useState("250");
@@ -14,7 +14,7 @@ export default function PaperTrading() {
   useEffect(() => {
     let cancelled = false;
     function load() {
-      fetch("/api/trade-status")
+      fetch(`/api/trade-status?basket=${basket}`)
         .then((r) => r.json())
         .then((d) => {
           if (!cancelled) {
@@ -33,7 +33,7 @@ export default function PaperTrading() {
       cancelled = true;
       clearInterval(id);
     };
-  }, []);
+  }, [basket]);
 
   async function addFunds() {
     const secret = ts.secret;
@@ -42,7 +42,7 @@ export default function PaperTrading() {
     setAddFundsResult(null);
     try {
       const res = await fetch(
-        `/api/add-funds?secret=${encodeURIComponent(secret)}&amount=${encodeURIComponent(amount)}`
+        `/api/add-funds?secret=${encodeURIComponent(secret)}&amount=${encodeURIComponent(amount)}&basket=${basket}`
       );
       const data = await res.json();
       if (data.error) setAddFundsResult({ ok: false, message: data.error });
@@ -63,7 +63,7 @@ export default function PaperTrading() {
   return (
     <div className="portfolio">
       <div className="portfolio__intro">
-        <h3>Paper trading account (live, simulated money)</h3>
+        <h3>{title}</h3>
         <p>
           Connected to a real Alpaca paper-trading account. No real money is involved anywhere
           here — trades execute against real market prices with simulated funds.
@@ -77,13 +77,7 @@ export default function PaperTrading() {
         <>
           <div className="portfolio__result">
             <div>
-              <div className="portfolio__stat-label">Cash</div>
-              <div className="portfolio__stat-value">
-                {status.cash != null ? `$${status.cash.toFixed(2)}` : "—"}
-              </div>
-            </div>
-            <div>
-              <div className="portfolio__stat-label">Holdings value</div>
+              <div className="portfolio__stat-label">Cash used</div>
               <div className="portfolio__stat-value">
                 {status.totalHoldingsValue != null ? `$${status.totalHoldingsValue.toFixed(2)}` : "—"}
               </div>
@@ -92,6 +86,12 @@ export default function PaperTrading() {
               <div className="portfolio__stat-label">Strategy banked</div>
               <div className="portfolio__stat-value up">
                 {status.strategyBanked != null ? `$${status.strategyBanked.toFixed(2)}` : "—"}
+              </div>
+            </div>
+            <div>
+              <div className="portfolio__stat-label">Total wealth</div>
+              <div className="portfolio__stat-value up">
+                {status.strategyWealth != null ? `$${status.strategyWealth.toFixed(2)}` : "—"}
               </div>
             </div>
           </div>
@@ -115,8 +115,8 @@ export default function PaperTrading() {
       <div className="add-funds">
         <h4>Add funds (simulated)</h4>
         <p className="add-funds__note">
-          This is not a real bank connection — it adds simulated money to your Alpaca paper
-          account only, split evenly across the basket.
+          This is not a real bank connection — it adds simulated money to this basket only,
+          split evenly across it.
         </p>
 
         {ts.error && <p className="portfolio__error">{ts.error}</p>}
