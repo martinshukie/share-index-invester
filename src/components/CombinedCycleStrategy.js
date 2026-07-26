@@ -57,7 +57,8 @@ function runTieredBacktest(seriesBySymbol, symbols) {
     0
   );
 
-  return { wealthSeries, events, banked, finalPositionValue, usedSymbols: usable };}
+  return { wealthSeries, events, banked, finalPositionValue, usedSymbols: usable };
+}
 
 export default function CombinedCycleStrategy({ range, basket, title = "Combined basket strategy (tiered)" }) {
   const [selected, setSelected] = useState(basket.map((a) => a.symbol));
@@ -116,7 +117,8 @@ export default function CombinedCycleStrategy({ range, basket, title = "Combined
             key={a.symbol}
             className={`chip ${selected.includes(a.symbol) ? "chip--on" : ""}`}
             onClick={() => toggle(a.symbol)}
-          >{a.symbol}
+          >
+            {a.symbol}
           </button>
         ))}
       </div>
