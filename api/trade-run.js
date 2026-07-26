@@ -54,7 +54,8 @@ async function buyNotional(base, symbol, notional, clientOrderId) {
   const body = {
     symbol,
     notional: notional.toFixed(2),
-    side: "buy",type: "market",
+    side: "buy",
+    type: "market",
     time_in_force: "day",
   };
   if (clientOrderId) body.client_order_id = clientOrderId;
@@ -108,6 +109,8 @@ export default async function handler(req, res) {
   if (!process.env.APCA_API_KEY_ID || !process.env.APCA_API_SECRET_KEY) {
     res.status(500).json({ error: "Alpaca API keys not configured" });
     return;
+  }
+
   const basketName = req.query.basket === "ai" ? "ai" : "main";
   const basketSymbols = BASKETS[basketName];
   const base = process.env.APCA_API_BASE_URL || "https://paper-api.alpaca.markets";
