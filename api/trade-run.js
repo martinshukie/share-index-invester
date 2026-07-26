@@ -171,4 +171,24 @@ export default async function handler(req, res) {
       res.status(200).json({
         basket: basketName,
         action: "tier2_bank",
-        banked:
+        banked: bankAmt,
+        reinvested: reinvestValue,
+        totalBanked: totalBanked + bankAmt,
+        orders,
+      });
+      return;
+    }
+
+    res.status(200).json({
+      basket: basketName,
+      action: "hold",
+      tier: 2,
+      currentValue,
+      cycleStartValue,
+      neededToDouble: cycleStartValue * 2,
+      wealth,
+    });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+}
