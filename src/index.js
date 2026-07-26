@@ -10,8 +10,16 @@ root.render(
   </React.StrictMode>
 );
 
+// No service worker / offline caching - it caused stale-build errors after
+// every deploy. This actively removes any previously-installed one so
+// devices that already have it installed get cleaned up automatically.
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/service-worker.js");
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((registration) => registration.unregister());
+  });
+}
+if (window.caches) {
+  caches.keys().then((names) => {
+    names.forEach((name) => caches.delete(name));
   });
 }
