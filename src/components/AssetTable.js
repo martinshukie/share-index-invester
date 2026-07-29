@@ -109,10 +109,20 @@ export default function AssetTable({ basket = "main", symbols = [] }) {
           <span>Amount</span>
           <span></span>
         </div>
-        {rows.map((h) => (
+        {rows.map((h) => {
+          const pct = h.costBasis > 0 ? (h.unrealizedPl / h.costBasis) * 100 : 0;
+          const up = pct >= 0;
+          return (
           <div className="asset-table__row" key={h.symbol}>
             <span className="asset-table__symbol">{h.symbol}</span>
-            <span>${h.marketValue.toFixed(2)}</span>
+            <span>
+              ${h.marketValue.toFixed(2)}
+              {h.costBasis > 0 && (
+                <span className={`asset-table__pct ${up ? "up" : "down"}`}>
+                  {up ? "▲" : "▼"} {Math.abs(pct).toFixed(1)}%
+                </span>
+              )}
+            </span>
             <span>{h.avgEntryPrice ? `$${h.avgEntryPrice.toFixed(2)}` : "—"}</span>
             <span className="up">${h.banked.toFixed(2)}</span>
             <input
@@ -139,7 +149,8 @@ export default function AssetTable({ basket = "main", symbols = [] }) {
               </button>
             </span>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
