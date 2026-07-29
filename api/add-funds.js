@@ -1,12 +1,10 @@
 // Adds simulated funds to a paper account basket by buying evenly across
-// it. ?basket=main or ?basket=ai selects which (defaults to main). Does
-// NOT touch any real bank account - simulated paper balance only.
-// Protected by the same secret as trade-run.js.
+// it. ?basket=main or ?basket=ai selects which. Basket composition comes
+// from Upstash storage (see baskets.js). Does NOT touch any real bank
+// account - simulated paper balance only. Protected by the same secret as
+// trade-run.js.
 
-const BASKETS = {
-  main: ["GLD", "USO", "AAPL", "MSFT", "NVDA", "XOM"],
-  ai: ["NBIS", "CRWV", "AVGO"],
-};
+import { getBasketSymbols } from "./baskets.js";
 
 function alpacaHeaders() {
   return {
@@ -46,7 +44,7 @@ export default async function handler(req, res) {
   }
 
   const basketName = req.query.basket === "ai" ? "ai" : "main";
-  const basketSymbols = BASKETS[basketName];
+  const basketSymbols = await getBasketSymbols(basketName);
   const base = process.env.APCA_API_BASE_URL || "https://paper-api.alpaca.markets";
   const perAsset = amount / basketSymbols.length;
 
