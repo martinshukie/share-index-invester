@@ -1,9 +1,10 @@
 // Manually banks profit from ONE specific asset - sells the given dollar
 // amount and marks it as "banked" (via a tagged client_order_id) so it
-// shows up correctly in the banked total. Protected by the same secret as
-// trade-run.js.
+// shows up correctly in the banked total. Validates the symbol against
+// whatever is currently in either basket (from Upstash storage).
+// Protected by the same secret as trade-run.js.
 
-const ALL_SYMBOLS = ["GLD", "USO", "AAPL", "MSFT", "NVDA", "XOM", "NBIS", "CRWV", "AVGO"];
+import { getAllSymbols } from "./baskets.js";
 
 function alpacaHeaders() {
   return {
@@ -22,7 +23,8 @@ export default async function handler(req, res) {
 
   const symbol = req.query.symbol;
   const amount = parseFloat(req.query.amount);
-  if (!ALL_SYMBOLS.includes(symbol)) {
+  const allSymbols = await getAllSymbols();
+  if (!allSymbols.includes(symbol)) {
     res.status(400).json({ error: `Unknown symbol "${symbol}"` });
     return;
   }
