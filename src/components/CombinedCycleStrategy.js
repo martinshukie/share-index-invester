@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import PriceChart from "./PriceChart";
 import { fetchQuote } from "../assets";
 
@@ -60,8 +60,29 @@ function runTieredBacktest(seriesBySymbol, symbols) {
   return { wealthSeries, events, banked, finalPositionValue, usedSymbols: usable };
 }
 
-export default function CombinedCycleStrategy({ range, basket, title = "Combined basket strategy (tiered)" }) {
-  const [selected, setSelected] = useState(basket.map((a) => a.symbol));
+export default function CombinedCycleStrategy({ range, basketKey, title = "Combined basket strategy (tiered)" }) {
+  const [availableSymbols, setAvailableSymbols] = useState([]);
+  const [selected, setSelected] = useState([]);
+
+  // Pulls the LIVE basket composition (same list the real trading uses),
+  // so the backtest always reflects whatever stocks are actually in play -
+  // add/remove one via "Manage stocks" and it shows up here too.
+  useEffect(() => {
+    function load() {
+      fetch(`/api/baskets?basket=${basketKey}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (!d.error) {
+            setAvailableSymbols(d.symbols);
+            setSelected((prev) => (prev.length === 0 ? d.symbols : prev));
+          }
+        })
+        .catch(() => {});
+    }
+    load();
+    const id = setInterval(load, 60000);
+    return () => clearInterval(id);
+  }, [basketKey]);
   const [seriesBySymbol, setSeriesBySymbol] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -112,13 +133,13 @@ export default function CombinedCycleStrategy({ range, basket, title = "Combined
       </div>
 
       <div className="portfolio__picker">
-        {basket.map((a) => (
+        {availableSymbols.map((symbol) => (
           <button
-            key={a.symbol}
-            className={`chip ${selected.includes(a.symbol) ? "chip--on" : ""}`}
-            onClick={() => toggle(a.symbol)}
+            key={symbol}
+            className={`chip ${selected.includes(symbol) ? "chip--on" : ""}`}
+            onClick={() => toggle(symbol)}
           >
-            {a.symbol}
+            {symbol}
           </button>
         ))}
       </div>
