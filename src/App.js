@@ -8,6 +8,7 @@ import Portfolio from "./components/Portfolio";
 import CombinedCycleStrategy from "./components/CombinedCycleStrategy";
 import PaperTrading from "./components/PaperTrading";
 import AssetTable from "./components/AssetTable";
+import ManageStocks from "./components/ManageStocks";
 
 const REFRESH_MS = 60000;
 
@@ -104,14 +105,16 @@ export default function App() {
         )}
 
         <h2 className="section-heading">Main basket — gold, oil &amp; equities</h2>
-        <CombinedCycleStrategy range={range} basket={TRADE_BASKET} title="Main basket strategy (tiered)" />
+        <CombinedCycleStrategy range={range} basketKey="main" title="Main basket strategy (tiered)" />
         <PaperTrading basket="main" title="Main basket — paper trading account" />
         <AssetTable basket="main" symbols={TRADE_BASKET.map((a) => a.symbol)} />
+        <ManageStocks basket="main" title="Manage main basket stocks" />
 
         <h2 className="section-heading">AI basket — separate strategy</h2>
-        <CombinedCycleStrategy range={range} basket={AI_BASKET} title="AI basket strategy (tiered)" />
+        <CombinedCycleStrategy range={range} basketKey="ai" title="AI basket strategy (tiered)" />
         <PaperTrading basket="ai" title="AI basket — paper trading account" />
         <AssetTable basket="ai" symbols={AI_BASKET.map((a) => a.symbol)} />
+        <ManageStocks basket="ai" title="Manage AI basket stocks" />
 
         <Portfolio range={range} />
       </main>
