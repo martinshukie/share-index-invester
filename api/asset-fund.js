@@ -1,7 +1,9 @@
 // Manually buys more of ONE specific asset - simulated paper money only,
-// no real bank connection. Protected by the same secret as trade-run.js.
+// no real bank connection. Validates the symbol against whatever is
+// currently in either basket (from Upstash storage). Protected by the
+// same secret as trade-run.js.
 
-const ALL_SYMBOLS = ["GLD", "USO", "AAPL", "MSFT", "NVDA", "XOM", "NBIS", "CRWV", "AVGO"];
+import { getAllSymbols } from "./baskets.js";
 
 function alpacaHeaders() {
   return {
@@ -20,7 +22,8 @@ export default async function handler(req, res) {
 
   const symbol = req.query.symbol;
   const amount = parseFloat(req.query.amount);
-  if (!ALL_SYMBOLS.includes(symbol)) {
+  const allSymbols = await getAllSymbols();
+  if (!allSymbols.includes(symbol)) {
     res.status(400).json({ error: `Unknown symbol "${symbol}"` });
     return;
   }
