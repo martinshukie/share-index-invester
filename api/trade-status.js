@@ -1,12 +1,10 @@
 // Read-only view of a paper trading basket, for the dashboard to poll.
-// ?basket=main or ?basket=ai selects which independent basket to report on
-// (defaults to main). Cannot place trades - only trade-run.js /
-// asset-fund.js / asset-bank.js (all secret-protected) can do that.
+// ?basket=main or ?basket=ai selects which independent basket to report on.
+// Basket composition comes from Upstash storage (see baskets.js), so it
+// reflects whatever stocks are currently in the basket, even if changed
+// at runtime through the app.
 
-const BASKETS = {
-  main: ["GLD", "USO", "AAPL", "MSFT", "NVDA", "XOM"],
-  ai: ["NBIS", "CRWV", "AVGO"],
-};
+import { getBasketSymbols } from "./baskets.js";
 
 function alpacaHeaders() {
   return {
@@ -48,7 +46,7 @@ export default async function handler(req, res) {
   }
 
   const basketName = req.query.basket === "ai" ? "ai" : "main";
-  const basketSymbols = BASKETS[basketName];
+  const basketSymbols = await getBasketSymbols(basketName);
   const base = process.env.APCA_API_BASE_URL || "https://paper-api.alpaca.markets";
 
   try {
