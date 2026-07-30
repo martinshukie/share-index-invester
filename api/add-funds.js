@@ -1,23 +1,17 @@
-// Adds simulated funds to a paper account basket by buying evenly across
-// it. ?basket=main or ?basket=ai selects which. Basket composition comes
-// from Upstash storage (see baskets.js). Does NOT touch any real bank
-// account - simulated paper balance only. Protected by the same secret as
-// trade-run.js.
+// Adds funds to a basket by buying evenly across it - PAPER or LIVE
+// depending on alpaca-config.js. ?basket=main or ?basket=ai selects which.
+// Basket composition comes from Upstash storage (see baskets.js). This
+// only works within whatever balance already exists in the connected
+// Alpaca account - it never touches any bank account directly, live or
+// otherwise. Protected by the same secret as trade-run.js.
 
 import { getBasketSymbols } from "./baskets.js";
+import { getAlpacaConfig } from "./alpaca-config.js";
 
-function alpacaHeaders() {
-  return {
-    "APCA-API-KEY-ID": process.env.APCA_API_KEY_ID,
-    "APCA-API-SECRET-KEY": process.env.APCA_API_SECRET_KEY,
-    "Content-Type": "application/json",
-  };
-}
-
-async function buyNotional(base, symbol, notional) {
+async function buyNotional(base, headers, symbol, notional) {
   const r = await fetch(`${base}/v2/orders`, {
     method: "POST",
-    headers: alpacaHeaders(),
+    headers,
     body: JSON.stringify({
       symbol,
       notional: notional.toFixed(2),
@@ -43,16 +37,24 @@ export default async function handler(req, res) {
     return;
   }
 
+  const config = getAlpacaConfig();
+  if (!config.keysConfigured) {
+    res.status(500).json({
+      error: config.isLive ? "Live Alpaca API keys not configured" : "Paper Alpaca API keys not configured",
+    });
+    return;
+  }
+
+  const { base, headers, isLive } = config;
   const basketName = req.query.basket === "ai" ? "ai" : "main";
   const basketSymbols = await getBasketSymbols(basketName);
-  const base = process.env.APCA_API_BASE_URL || "https://paper-api.alpaca.markets";
   const perAsset = amount / basketSymbols.length;
 
   try {
     const orders = await Promise.all(
-      basketSymbols.map((symbol) => buyNotional(base, symbol, perAsset))
+      basketSymbols.map((symbol) => buyNotional(base, headers, symbol, perAsset))
     );
-    res.status(200).json({ basket: basketName, action: "funds_added", amount, perAsset, orders });
+    res.status(200).json({ basket: basketName, isLive, action: "funds_added", amount, perAsset, orders });
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
