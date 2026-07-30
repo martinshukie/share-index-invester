@@ -1,18 +1,12 @@
-// Manually banks profit from ONE specific asset - sells the given dollar
-// amount and marks it as "banked" (via a tagged client_order_id) so it
-// shows up correctly in the banked total. Validates the symbol against
-// whatever is currently in either basket (from Upstash storage).
-// Protected by the same secret as trade-run.js.
+// Manually banks profit from ONE specific asset - PAPER or LIVE depending
+// on alpaca-config.js. Sells the given dollar amount and marks it as
+// "banked" (via a tagged client_order_id). Validates the symbol against
+// whatever is currently in either basket (from Upstash storage). Never
+// touches any bank account directly. Protected by the same secret as
+// trade-run.js.
 
 import { getAllSymbols } from "./baskets.js";
-
-function alpacaHeaders() {
-  return {
-    "APCA-API-KEY-ID": process.env.APCA_API_KEY_ID,
-    "APCA-API-SECRET-KEY": process.env.APCA_API_SECRET_KEY,
-    "Content-Type": "application/json",
-  };
-}
+import { getAlpacaConfig } from "./alpaca-config.js";
 
 export default async function handler(req, res) {
   const secret = req.query.secret;
@@ -33,12 +27,19 @@ export default async function handler(req, res) {
     return;
   }
 
-  const base = process.env.APCA_API_BASE_URL || "https://paper-api.alpaca.markets";
+  const config = getAlpacaConfig();
+  if (!config.keysConfigured) {
+    res.status(500).json({
+      error: config.isLive ? "Live Alpaca API keys not configured" : "Paper Alpaca API keys not configured",
+    });
+    return;
+  }
+  const { base, headers, isLive } = config;
 
   try {
     const r = await fetch(`${base}/v2/orders`, {
       method: "POST",
-      headers: alpacaHeaders(),
+      headers,
       body: JSON.stringify({
         symbol,
         notional: amount.toFixed(2),
@@ -50,7 +51,7 @@ export default async function handler(req, res) {
     });
     if (!r.ok) throw new Error(`sell order failed: ${r.status} ${await r.text()}`);
     const order = await r.json();
-    res.status(200).json({ action: "asset_banked", symbol, amount, order });
+    res.status(200).json({ action: "asset_banked", isLive, symbol, amount, order });
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
