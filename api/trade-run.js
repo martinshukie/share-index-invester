@@ -93,7 +93,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const config = getAlpacaConfig();
+  const config = await getAlpacaConfig();
   if (!config.keysConfigured) {
     res.status(500).json({
       error: config.isLive
