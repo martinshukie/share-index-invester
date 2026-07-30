@@ -18,7 +18,6 @@ export default function ManageStocks({ basket, title = "Manage stocks" }) {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [basket]);
 
   async function addSymbol() {
