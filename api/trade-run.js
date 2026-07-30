@@ -1,6 +1,10 @@
-// Executes the doubling-tier take-profit rule against a real Alpaca PAPER
-// trading account, for ONE of two fully independent baskets selected via
-// ?basket=main or ?basket=ai.
+// Executes the doubling-tier take-profit rule against a real Alpaca
+// account - PAPER by default, or LIVE (real money) only if both
+// TRADING_MODE=live and LIVE_CONFIRM are correctly set (see
+// alpaca-config.js). Runs for ONE of two fully independent baskets
+// selected via ?basket=main or ?basket=ai. Basket composition (which
+// stocks) comes from Upstash storage via getBasketSymbols(), so it can be
+// changed at runtime through the app without a code deploy.
 //
 // Rule (mirrors src/components/CombinedCycleStrategy.js):
 //  - no positions yet in this basket -> open $250 split evenly across it
@@ -8,10 +12,7 @@
 //    climbs that same amount above its current base - starting at $50 per
 //    $50. Each time total wealth (banked + invested) crosses the current
 //    tier ceiling ($500, then $1,000, then $2,000...), both the ceiling
-//    and the bank amount double for the next tier. No external database
-//    is used - the tier is recalculated fresh each run from the current
-//    banked total and position value, so it's always correct without
-//    needing to persist state between runs.
+//    and the bank amount double for the next tier.
 //
 // "Total banked" is reconstructed by reading order history for orders
 // tagged with a bank-<amount>-<symbol>-<timestamp> client_order_id,
@@ -19,38 +20,25 @@
 //
 // Requires a ?secret= query param matching TRADE_CRON_SECRET.
 
-const BASKETS = {
-  main: ["GLD", "USO", "AAPL", "MSFT", "NVDA", "XOM"],
-  ai: ["NBIS", "CRWV", "AVGO"],
-};
+import { getBasketSymbols } from "./baskets.js";
+import { getAlpacaConfig } from "./alpaca-config.js";
 
 const START_STAKE = 250;
 
-function alpacaHeaders() {
-  return {
-    "APCA-API-KEY-ID": process.env.APCA_API_KEY_ID,
-    "APCA-API-SECRET-KEY": process.env.APCA_API_SECRET_KEY,
-    "Content-Type": "application/json",
-  };
-}
-
-async function getPosition(base, symbol) {
-  const r = await fetch(`${base}/v2/positions/${symbol}`, { headers: alpacaHeaders() });
+async function getPosition(base, headers, symbol) {
+  const r = await fetch(`${base}/v2/positions/${symbol}`, { headers });
   if (r.status === 404) return null;
   if (!r.ok) throw new Error(`position fetch failed for ${symbol}: ${r.status} ${await r.text()}`);
   return r.json();
 }
 
-async function closePosition(base, symbol) {
-  const r = await fetch(`${base}/v2/positions/${symbol}`, {
-    method: "DELETE",
-    headers: alpacaHeaders(),
-  });
+async function closePosition(base, headers, symbol) {
+  const r = await fetch(`${base}/v2/positions/${symbol}`, { method: "DELETE", headers });
   if (!r.ok) throw new Error(`close position failed for ${symbol}: ${r.status} ${await r.text()}`);
   return r.json();
 }
 
-async function buyNotional(base, symbol, notional, clientOrderId) {
+async function buyNotional(base, headers, symbol, notional, clientOrderId) {
   const body = {
     symbol,
     notional: notional.toFixed(2),
@@ -61,17 +49,15 @@ async function buyNotional(base, symbol, notional, clientOrderId) {
   if (clientOrderId) body.client_order_id = clientOrderId;
   const r = await fetch(`${base}/v2/orders`, {
     method: "POST",
-    headers: alpacaHeaders(),
+    headers,
     body: JSON.stringify(body),
   });
   if (!r.ok) throw new Error(`buy order failed for ${symbol}: ${r.status} ${await r.text()}`);
   return r.json();
 }
 
-async function getTotalBanked(base, basketSymbols) {
-  const r = await fetch(`${base}/v2/orders?status=all&limit=500&direction=desc`, {
-    headers: alpacaHeaders(),
-  });
+async function getTotalBanked(base, headers, basketSymbols) {
+  const r = await fetch(`${base}/v2/orders?status=all&limit=500&direction=desc`, { headers });
   if (!r.ok) return 0;
   const orders = await r.json();
   let total = 0;
@@ -87,15 +73,15 @@ async function getTotalBanked(base, basketSymbols) {
   return total;
 }
 
-async function closeAndReopenEvenly(base, basketSymbols, heldSymbols, reinvestValue, bankAmount) {
-  await Promise.all(heldSymbols.map((s) => closePosition(base, s)));
+async function closeAndReopenEvenly(base, headers, basketSymbols, heldSymbols, reinvestValue, bankAmount) {
+  await Promise.all(heldSymbols.map((s) => closePosition(base, headers, s)));
   const perAsset = reinvestValue / basketSymbols.length;
   const perAssetBank = bankAmount ? bankAmount / basketSymbols.length : 0;
   const ts = Date.now();
   const orders = [];
   for (const symbol of basketSymbols) {
     const id = bankAmount ? `bank-${perAssetBank.toFixed(4)}-${symbol}-${ts}` : undefined;
-    orders.push(await buyNotional(base, symbol, perAsset, id));
+    orders.push(await buyNotional(base, headers, symbol, perAsset, id));
   }
   return orders;
 }
@@ -106,32 +92,38 @@ export default async function handler(req, res) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  if (!process.env.APCA_API_KEY_ID || !process.env.APCA_API_SECRET_KEY) {
-    res.status(500).json({ error: "Alpaca API keys not configured" });
+
+  const config = getAlpacaConfig();
+  if (!config.keysConfigured) {
+    res.status(500).json({
+      error: config.isLive
+        ? "Live Alpaca API keys not configured"
+        : "Paper Alpaca API keys not configured",
+    });
     return;
   }
 
+  const { base, headers, isLive } = config;
   const basketName = req.query.basket === "ai" ? "ai" : "main";
-  const basketSymbols = BASKETS[basketName];
-  const base = process.env.APCA_API_BASE_URL || "https://paper-api.alpaca.markets";
+  const basketSymbols = await getBasketSymbols(basketName);
 
   try {
-    const positions = await Promise.all(basketSymbols.map((s) => getPosition(base, s)));
+    const positions = await Promise.all(basketSymbols.map((s) => getPosition(base, headers, s)));
     const held = basketSymbols.filter((_, i) => positions[i] !== null);
 
     if (held.length === 0) {
       const perAsset = START_STAKE / basketSymbols.length;
       const orders = [];
       for (const symbol of basketSymbols) {
-        orders.push(await buyNotional(base, symbol, perAsset));
+        orders.push(await buyNotional(base, headers, symbol, perAsset));
       }
-      res.status(200).json({ basket: basketName, action: "opened_initial_basket", notional: START_STAKE, orders });
+      res.status(200).json({ basket: basketName, isLive, action: "opened_initial_basket", notional: START_STAKE, orders });
       return;
     }
 
     const currentValue = positions.reduce((sum, p) => (p ? sum + parseFloat(p.market_value) : sum), 0);
     const cycleStartValue = positions.reduce((sum, p) => (p ? sum + parseFloat(p.cost_basis) : sum), 0);
-    const totalBanked = await getTotalBanked(base, basketSymbols);
+    const totalBanked = await getTotalBanked(base, headers, basketSymbols);
     const wealth = totalBanked + currentValue;
 
     let tierCeiling = START_STAKE * 2;
@@ -140,9 +132,10 @@ export default async function handler(req, res) {
 
     if (currentValue >= cycleStartValue + bankIncrement) {
       const reinvestValue = currentValue - bankIncrement;
-      const orders = await closeAndReopenEvenly(base, basketSymbols, held, reinvestValue, bankIncrement);
+      const orders = await closeAndReopenEvenly(base, headers, basketSymbols, held, reinvestValue, bankIncrement);
       res.status(200).json({
         basket: basketName,
+        isLive,
         action: "bank",
         banked: bankIncrement,
         reinvested: reinvestValue,
@@ -155,6 +148,7 @@ export default async function handler(req, res) {
 
     res.status(200).json({
       basket: basketName,
+      isLive,
       action: "hold",
       currentValue,
       cycleStartValue,
