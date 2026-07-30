@@ -28,6 +28,11 @@ export default function AssetTable({ basket = "main", symbols = [] }) {
     const secret = ts.secret;
     const amount = parseFloat(amounts[symbol]);
     if (!secret || !amount || amount <= 0) return;
+    const verb = action === "asset-fund" ? "add" : "bank (sell)";
+    const confirmMsg = status?.isLive
+      ? `You are about to ${verb} $${amount} on ${symbol} with LIVE trading (REAL MONEY). Confirm?`
+      : `${verb === "add" ? "Add" : "Bank"} $${amount} on ${symbol} (simulated paper money)?`;
+    if (!window.confirm(confirmMsg)) return;
     setBusySymbol(symbol);
     setMessage(null);
     try {
