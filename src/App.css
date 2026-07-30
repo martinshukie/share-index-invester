@@ -625,3 +625,24 @@ button:focus-visible {
 
 .asset-table__pct.up { color: var(--up); }
 .asset-table__pct.down { color: var(--down); }
+
+/* ---------- Live/paper mode badge ---------- */
+.mode-badge {
+  display: inline-block;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin: 6px 0 10px;
+}
+
+.mode-badge--paper {
+  background: rgba(63, 182, 139, 0.15);
+  color: var(--up);
+}
+
+.mode-badge--live {
+  background: rgba(224, 87, 91, 0.15);
+  color: var(--down);
+}
