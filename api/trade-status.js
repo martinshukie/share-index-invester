@@ -1,20 +1,13 @@
-// Read-only view of a paper trading basket, for the dashboard to poll.
-// ?basket=main or ?basket=ai selects which independent basket to report on.
-// Basket composition comes from Upstash storage (see baskets.js), so it
-// reflects whatever stocks are currently in the basket, even if changed
-// at runtime through the app.
+// Read-only view of a paper OR live trading basket (see alpaca-config.js
+// for how the mode is chosen), for the dashboard to poll. ?basket=main or
+// ?basket=ai selects which independent basket to report on. Basket
+// composition comes from Upstash storage (see baskets.js).
 
 import { getBasketSymbols } from "./baskets.js";
+import { getAlpacaConfig } from "./alpaca-config.js";
 
-function alpacaHeaders() {
-  return {
-    "APCA-API-KEY-ID": process.env.APCA_API_KEY_ID,
-    "APCA-API-SECRET-KEY": process.env.APCA_API_SECRET_KEY,
-  };
-}
-
-async function getPosition(base, symbol) {
-  const r = await fetch(`${base}/v2/positions/${symbol}`, { headers: alpacaHeaders() });
+async function getPosition(base, headers, symbol) {
+  const r = await fetch(`${base}/v2/positions/${symbol}`, { headers });
   if (r.status === 404) return null;
   if (!r.ok) return null;
   return r.json();
@@ -40,21 +33,24 @@ function computeBanked(orders, basketSymbols) {
 }
 
 export default async function handler(req, res) {
-  if (!process.env.APCA_API_KEY_ID || !process.env.APCA_API_SECRET_KEY) {
-    res.status(500).json({ error: "Alpaca API keys not configured" });
+  const config = getAlpacaConfig();
+  if (!config.keysConfigured) {
+    res.status(500).json({
+      error: config.isLive ? "Live Alpaca API keys not configured" : "Paper Alpaca API keys not configured",
+    });
     return;
   }
 
+  const { base, headers, isLive } = config;
   const basketName = req.query.basket === "ai" ? "ai" : "main";
   const basketSymbols = await getBasketSymbols(basketName);
-  const base = process.env.APCA_API_BASE_URL || "https://paper-api.alpaca.markets";
 
   try {
     const [accountRes, allOrdersRes, recentOrdersRes, ...positionResults] = await Promise.all([
-      fetch(`${base}/v2/account`, { headers: alpacaHeaders() }),
-      fetch(`${base}/v2/orders?status=all&limit=500&direction=desc`, { headers: alpacaHeaders() }),
-      fetch(`${base}/v2/orders?status=all&limit=10&direction=desc`, { headers: alpacaHeaders() }),
-      ...basketSymbols.map((symbol) => getPosition(base, symbol)),
+      fetch(`${base}/v2/account`, { headers }),
+      fetch(`${base}/v2/orders?status=all&limit=500&direction=desc`, { headers }),
+      fetch(`${base}/v2/orders?status=all&limit=10&direction=desc`, { headers }),
+      ...basketSymbols.map((symbol) => getPosition(base, headers, symbol)),
     ]);
 
     const account = accountRes.ok ? await accountRes.json() : null;
@@ -81,6 +77,7 @@ export default async function handler(req, res) {
     res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=60");
     res.status(200).json({
       basket: basketName,
+      isLive,
       cash: account ? parseFloat(account.cash) : null,
       equity: account ? parseFloat(account.equity) : null,
       holdings: holdings.filter((h) => h.marketValue > 0 || h.banked > 0),
