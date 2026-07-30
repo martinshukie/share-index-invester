@@ -64,9 +64,15 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
     <div className="portfolio">
       <div className="portfolio__intro">
         <h3>{title}</h3>
+        {status && (
+          <p className={`mode-badge ${status.isLive ? "mode-badge--live" : "mode-badge--paper"}`}>
+            {status.isLive ? "🔴 LIVE — REAL MONEY" : "🟢 Paper trading — simulated money"}
+          </p>
+        )}
         <p>
-          Connected to a real Alpaca paper-trading account. No real money is involved anywhere
-          here — trades execute against real market prices with simulated funds.
+          {status?.isLive
+            ? "This account is trading with real money. All the same logic applies, but gains and losses here are real."
+            : "Connected to a real Alpaca paper-trading account. No real money is involved anywhere here — trades execute against real market prices with simulated funds."}
         </p>
       </div>
 
