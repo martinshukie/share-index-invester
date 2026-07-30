@@ -9,6 +9,7 @@ import CombinedCycleStrategy from "./components/CombinedCycleStrategy";
 import PaperTrading from "./components/PaperTrading";
 import AssetTable from "./components/AssetTable";
 import ManageStocks from "./components/ManageStocks";
+import LiveSwitch from "./components/LiveSwitch";
 
 const REFRESH_MS = 60000;
 
@@ -70,6 +71,7 @@ export default function App() {
       </header>
 
       <main className="app__main">
+        <LiveSwitch />
         <HoldingsScreen />
       </main>
 
