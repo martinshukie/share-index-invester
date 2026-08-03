@@ -12,7 +12,7 @@ const START_STAKE = 250;
 //   Tier 2: bank $100 per $100 climb, until wealth hits $1,000
 //   Tier 3: bank $200 per $200 climb, until wealth hits $2,000
 //   ...continues doubling indefinitely
-function runTieredBacktest(seriesBySymbol, symbols) {
+function runTieredBacktest(seriesBySymbol, symbols, bankScale = 1) {
   const usable = symbols.filter((s) => seriesBySymbol[s]?.length > 1);
   if (usable.length === 0) return null;
 
@@ -39,7 +39,7 @@ function runTieredBacktest(seriesBySymbol, symbols) {
 
     let tierCeiling = START_STAKE * 2;
     while (wealth >= tierCeiling) tierCeiling *= 2;
-    const bankIncrement = tierCeiling / 10;
+    const bankIncrement = (tierCeiling / 10) * bankScale;
 
     if (currentValue >= cycleStartValue + bankIncrement) {
       banked += bankIncrement;
@@ -63,10 +63,12 @@ function runTieredBacktest(seriesBySymbol, symbols) {
 export default function CombinedCycleStrategy({ range, basketKey, title = "Combined basket strategy (tiered)" }) {
   const [availableSymbols, setAvailableSymbols] = useState([]);
   const [selected, setSelected] = useState([]);
+  const [bankScale, setBankScale] = useState(1);
 
-  // Pulls the LIVE basket composition (same list the real trading uses),
-  // so the backtest always reflects whatever stocks are actually in play -
-  // add/remove one via "Manage stocks" and it shows up here too.
+  // Pulls the LIVE basket composition and bank scale (same settings the
+  // real trading uses), so the backtest always reflects whatever's
+  // actually in play - add/remove a stock via "Manage stocks" or adjust
+  // the sensitivity slider below and both show up here too.
   useEffect(() => {
     function load() {
       fetch(`/api/baskets?basket=${basketKey}`)
@@ -76,6 +78,12 @@ export default function CombinedCycleStrategy({ range, basketKey, title = "Combi
             setAvailableSymbols(d.symbols);
             setSelected((prev) => (prev.length === 0 ? d.symbols : prev));
           }
+        })
+        .catch(() => {});
+      fetch(`/api/bank-scale?basket=${basketKey}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (!d.error) setBankScale(d.scale);
         })
         .catch(() => {});
     }
@@ -113,8 +121,8 @@ export default function CombinedCycleStrategy({ range, basketKey, title = "Combi
   }
 
   const result = useMemo(
-    () => runTieredBacktest(seriesBySymbol, selected),
-    [seriesBySymbol, selected]
+    () => runTieredBacktest(seriesBySymbol, selected, bankScale),
+    [seriesBySymbol, selected, bankScale]
   );
 
   const totalWealth = result ? result.banked + result.finalPositionValue : null;
@@ -129,6 +137,7 @@ export default function CombinedCycleStrategy({ range, basketKey, title = "Combi
           position climbs that same amount above its base — starting at $50 per $50. Each time
           total wealth crosses the current tier ($500, then $1,000, then $2,000...), both the
           ceiling and the bank amount double for the next tier.
+          {bankScale !== 1 && ` This basket's bank sensitivity is currently set to ${bankScale}x.`}
         </p>
       </div>
 

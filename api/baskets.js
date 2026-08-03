@@ -50,6 +50,38 @@ export async function getAllSymbols() {
   return [...main, ...ai];
 }
 
+// Reset timestamp: advanced by reset-basket.js whenever a basket is sold
+// back to cash. trade-run.js and trade-status.js only count "bank-" orders
+// submitted after this point, so a reset zeroes the basket's banked total
+// without needing to touch Alpaca's own order history.
+export async function getResetTimestamp(basketName) {
+  const raw = await kvGet(`reset-ts:${basketName}`);
+  const ts = parseInt(raw, 10);
+  return Number.isFinite(ts) ? ts : 0;
+}
+
+export async function setResetTimestamp(basketName, ts) {
+  return kvSet(`reset-ts:${basketName}`, String(ts));
+}
+
+// Bank scale: a per-basket multiplier (0.25x-4x) on the doubling-tier
+// strategy's bank increment, set via BankScaleControl.js and read by both
+// trade-run.js (live) and CombinedCycleStrategy.js (backtest).
+const MIN_BANK_SCALE = 0.25;
+const MAX_BANK_SCALE = 4;
+
+export async function getBankScale(basketName) {
+  const raw = await kvGet(`bank-scale:${basketName}`);
+  const scale = parseFloat(raw);
+  if (!Number.isFinite(scale)) return 1;
+  return Math.min(MAX_BANK_SCALE, Math.max(MIN_BANK_SCALE, scale));
+}
+
+export async function setBankScale(basketName, scale) {
+  const clamped = Math.min(MAX_BANK_SCALE, Math.max(MIN_BANK_SCALE, scale));
+  return kvSet(`bank-scale:${basketName}`, String(clamped));
+}
+
 export default async function handler(req, res) {
   const basketName = req.query.basket === "ai" ? "ai" : "main";
 
