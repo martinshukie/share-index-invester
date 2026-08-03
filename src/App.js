@@ -22,7 +22,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [entryPrices, setEntryPrices] = useState({});
+  const [entryMarkers, setEntryMarkers] = useState({});
 
   const refreshEntryPrices = useCallback(() => {
     Promise.allSettled(
@@ -32,11 +32,16 @@ export default function App() {
       results.forEach((r) => {
         if (r.status === "fulfilled" && !r.value.error) {
           (r.value.allHoldings || []).forEach((h) => {
-            if (h.qty > 0 && h.avgEntryPrice > 0) next[h.symbol] = h.avgEntryPrice;
+            if (h.qty > 0 && h.avgEntryPrice > 0) {
+              next[h.symbol] = {
+                price: h.avgEntryPrice,
+                time: h.entryTime ? new Date(h.entryTime).getTime() : null,
+              };
+            }
           });
         }
       });
-      setEntryPrices(next);
+      setEntryMarkers(next);
     });
   }, []);
 
@@ -79,7 +84,7 @@ export default function App() {
   }, [selectedSymbol, range, loadSeries]);
 
   const asset = ASSETS.find((a) => a.symbol === selectedSymbol);
-  const buyPrice = entryPrices[TRADABLE_SYMBOL[selectedSymbol] || selectedSymbol];
+  const buyMarker = entryMarkers[TRADABLE_SYMBOL[selectedSymbol] || selectedSymbol];
 
   return (
     <div className="app">
@@ -128,7 +133,13 @@ export default function App() {
         {loading && <div className="loading">Loading {asset?.label}…</div>}
         {error && <div className="error">{error}</div>}
         {!loading && !error && series && (
-          <PriceChart series={series} label={asset?.label} unit={asset?.unit} buyPrice={buyPrice} />
+          <PriceChart
+            series={series}
+            label={asset?.label}
+            unit={asset?.unit}
+            buyPrice={buyMarker?.price}
+            buyTime={buyMarker?.time}
+          />
         )}
 
         <h2 className="section-heading">Main basket — gold, oil &amp; equities</h2>

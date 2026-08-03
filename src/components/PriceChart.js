@@ -4,7 +4,7 @@ const W = 640;
 const H = 240;
 const PAD = 24;
 
-export default function PriceChart({ series, label, unit, buyPrice }) {
+export default function PriceChart({ series, label, unit, buyPrice, buyTime }) {
   if (!series || series.length < 2) {
     return <div className="chart-empty">No data yet</div>;
   }
@@ -36,7 +36,22 @@ export default function PriceChart({ series, label, unit, buyPrice }) {
     path +
     ` L${points[points.length - 1][0].toFixed(1)},${H - PAD} L${points[0][0].toFixed(1)},${H - PAD} Z`;
 
-  const buyY = hasBuyMarker ? H - PAD - ((buyPrice - min) / span) * (H - PAD * 2) : null;
+  let buyPoint = null;
+  if (hasBuyMarker && buyTime != null && Number.isFinite(buyTime)) {
+    let nearestIdx = 0;
+    let nearestDiff = Infinity;
+    series.forEach((p, i) => {
+      const diff = Math.abs(p.t - buyTime);
+      if (diff < nearestDiff) {
+        nearestDiff = diff;
+        nearestIdx = i;
+      }
+    });
+    buyPoint = {
+      x: points[nearestIdx][0],
+      y: H - PAD - ((buyPrice - min) / span) * (H - PAD * 2),
+    };
+  }
 
   const startDate = new Date(series[0].t).toLocaleDateString(undefined, {
     month: "short",
@@ -73,18 +88,16 @@ export default function PriceChart({ series, label, unit, buyPrice }) {
         </defs>
         <path d={areaPath} fill={`url(#fill-${up ? "up" : "down"})`} stroke="none" />
         <path d={path} fill="none" stroke={up ? "#3fb68b" : "#e0575b"} strokeWidth="2" />
-        {buyY != null && (
+        {buyPoint && (
           <>
-            <line
-              x1={PAD}
-              y1={buyY}
-              x2={W - PAD}
-              y2={buyY}
-              stroke="#c9a227"
-              strokeWidth="1.5"
-              strokeDasharray="5 4"
-            />
-            <text x={W - PAD} y={buyY > H / 2 ? buyY - 6 : buyY + 14} textAnchor="end" fontSize="11" fill="#c9a227">
+            <circle cx={buyPoint.x} cy={buyPoint.y} r="5" fill="#c9a227" stroke="#1a1a1a" strokeWidth="1.5" />
+            <text
+              x={Math.min(Math.max(buyPoint.x, PAD + 30), W - PAD - 30)}
+              y={buyPoint.y > H / 2 ? buyPoint.y - 10 : buyPoint.y + 18}
+              textAnchor="middle"
+              fontSize="11"
+              fill="#c9a227"
+            >
               Bought {buyPrice.toFixed(2)}
             </text>
           </>
