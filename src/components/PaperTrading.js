@@ -60,9 +60,8 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
   async function resetBasket() {
     const secret = ts.secret;
     if (!secret) return;
-    const warning = status?.isLive
-      ? `This will SELL ALL LIVE positions in this basket back to cash (REAL MONEY) and zero its banked total. This cannot be undone. Continue?`
-      : `This will sell all paper positions in this basket back to cash and zero its banked total (simulated money only). This cannot be undone. Continue?`;
+    const warning =
+      "This will sell all paper positions in this basket back to cash and zero its banked total (simulated money only). This cannot be undone. Continue?";
     if (!window.confirm(warning)) return;
     setResetting(true);
     setResetResult(null);
@@ -237,23 +236,43 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
 
         <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--hairline)" }}>
           <h4>Reset basket</h4>
-          <p className="add-funds__note">
-            Sells all current positions in this basket back to cash and zeroes its banked
-            total. The strategy starts this basket over from scratch on its next run.
-          </p>
-          {ts.secret ? (
-            <button
-              className="btn btn--small"
-              style={{ background: "var(--down)" }}
-              onClick={resetBasket}
-              disabled={resetting}
-            >
-              {resetting ? "Resetting…" : "Reset basket"}
-            </button>
+          {status?.isLive ? (
+            <>
+              <p className="add-funds__note">
+                This app won't sell real positions automatically. To reset this basket, sell it
+                yourself in the Alpaca dashboard — the strategy reopens from scratch on its next
+                run once it sees no held positions.
+              </p>
+              <a
+                className="btn btn--small"
+                href="https://app.alpaca.markets/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open Alpaca dashboard ↗
+              </a>
+            </>
           ) : (
-            <p className="add-funds__note">
-              {ts.hasSaved ? "Unlock above to use this." : "Save the trade secret above to use this."}
-            </p>
+            <>
+              <p className="add-funds__note">
+                Sells all current positions in this basket back to cash and zeroes its banked
+                total. The strategy starts this basket over from scratch on its next run.
+              </p>
+              {ts.secret ? (
+                <button
+                  className="btn btn--small"
+                  style={{ background: "var(--down)" }}
+                  onClick={resetBasket}
+                  disabled={resetting}
+                >
+                  {resetting ? "Resetting…" : "Reset basket"}
+                </button>
+              ) : (
+                <p className="add-funds__note">
+                  {ts.hasSaved ? "Unlock above to use this." : "Save the trade secret above to use this."}
+                </p>
+              )}
+            </>
           )}
           {resetResult && (
             <p className={resetResult.ok ? "portfolio__stat-value up" : "portfolio__error"}>

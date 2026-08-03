@@ -1,11 +1,14 @@
 // Sells every current position in a basket back to cash and zeroes its
-// banked total - PAPER or LIVE depending on alpaca-config.js. "Zeroing"
-// is done by advancing the basket's reset timestamp (see baskets.js);
-// trade-run.js and trade-status.js only count "bank-" orders submitted
-// after that point, so older banked amounts stop counting without
-// needing to touch Alpaca's own order history. The next trade-run.js
-// cycle sees no held positions and reopens the basket from scratch, same
-// as a brand new basket. Protected by the same secret as trade-run.js.
+// banked total - PAPER ONLY. "Zeroing" is done by advancing the basket's
+// reset timestamp (see baskets.js); trade-run.js and trade-status.js only
+// count "bank-" orders submitted after that point, so older banked
+// amounts stop counting without needing to touch Alpaca's own order
+// history. The next trade-run.js cycle sees no held positions and
+// reopens the basket from scratch, same as a brand new basket.
+//
+// Refuses to run in live mode - selling real positions is not something
+// this app does automatically. To reset a live basket, sell it manually
+// in the Alpaca dashboard. Protected by the same secret as trade-run.js.
 
 import { getBasketSymbols, setResetTimestamp } from "./baskets.js";
 import { getAlpacaConfig } from "./alpaca-config.js";
@@ -34,6 +37,14 @@ export default async function handler(req, res) {
   if (!config.keysConfigured) {
     res.status(500).json({
       error: config.isLive ? "Live Alpaca API keys not configured" : "Paper Alpaca API keys not configured",
+    });
+    return;
+  }
+
+  if (config.isLive) {
+    res.status(400).json({
+      error:
+        "Live baskets can't be reset from the app - sell the positions directly in your Alpaca dashboard, then the strategy will reopen this basket from scratch on its next run.",
     });
     return;
   }
