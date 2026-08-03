@@ -4,14 +4,19 @@ const W = 640;
 const H = 240;
 const PAD = 24;
 
-export default function PriceChart({ series, label, unit }) {
+export default function PriceChart({ series, label, unit, buyPrice }) {
   if (!series || series.length < 2) {
     return <div className="chart-empty">No data yet</div>;
   }
 
   const closes = series.map((p) => p.close);
-  const min = Math.min(...closes);
-  const max = Math.max(...closes);
+  let min = Math.min(...closes);
+  let max = Math.max(...closes);
+  const hasBuyMarker = buyPrice != null && Number.isFinite(buyPrice) && buyPrice > 0;
+  if (hasBuyMarker) {
+    min = Math.min(min, buyPrice);
+    max = Math.max(max, buyPrice);
+  }
   const span = max - min || 1;
 
   const points = series.map((p, i) => {
@@ -30,6 +35,8 @@ export default function PriceChart({ series, label, unit }) {
   const areaPath =
     path +
     ` L${points[points.length - 1][0].toFixed(1)},${H - PAD} L${points[0][0].toFixed(1)},${H - PAD} Z`;
+
+  const buyY = hasBuyMarker ? H - PAD - ((buyPrice - min) / span) * (H - PAD * 2) : null;
 
   const startDate = new Date(series[0].t).toLocaleDateString(undefined, {
     month: "short",
@@ -66,6 +73,22 @@ export default function PriceChart({ series, label, unit }) {
         </defs>
         <path d={areaPath} fill={`url(#fill-${up ? "up" : "down"})`} stroke="none" />
         <path d={path} fill="none" stroke={up ? "#3fb68b" : "#e0575b"} strokeWidth="2" />
+        {buyY != null && (
+          <>
+            <line
+              x1={PAD}
+              y1={buyY}
+              x2={W - PAD}
+              y2={buyY}
+              stroke="#c9a227"
+              strokeWidth="1.5"
+              strokeDasharray="5 4"
+            />
+            <text x={W - PAD} y={buyY > H / 2 ? buyY - 6 : buyY + 14} textAnchor="end" fontSize="11" fill="#c9a227">
+              Bought {buyPrice.toFixed(2)}
+            </text>
+          </>
+        )}
       </svg>
     </div>
   );

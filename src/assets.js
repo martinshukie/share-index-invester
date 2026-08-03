@@ -34,6 +34,15 @@ export const AI_BASKET = [
   { symbol: "AVGO", label: "Broadcom" },
 ];
 
+// Gold and oil display as futures (Yahoo tickers) but trade as ETFs
+// (Alpaca can't trade futures directly) - maps the displayed symbol to
+// whatever the trading account actually holds, so the price chart can
+// look up the real entry price for the right instrument.
+export const TRADABLE_SYMBOL = {
+  "GC=F": "GLD",
+  "CL=F": "USO",
+};
+
 export const RANGES = [
   { value: "1mo", label: "1M" },
   { value: "6mo", label: "6M" },
