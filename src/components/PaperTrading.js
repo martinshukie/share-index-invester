@@ -212,13 +212,13 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
           </p>
         )}
 
-        {ts.hasSaved && ts.secret && (
-          <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--hairline)" }}>
-            <h4>Reset basket</h4>
-            <p className="add-funds__note">
-              Sells all current positions in this basket back to cash and zeroes its banked
-              total. The strategy starts this basket over from scratch on its next run.
-            </p>
+        <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--hairline)" }}>
+          <h4>Reset basket</h4>
+          <p className="add-funds__note">
+            Sells all current positions in this basket back to cash and zeroes its banked
+            total. The strategy starts this basket over from scratch on its next run.
+          </p>
+          {ts.secret ? (
             <button
               className="btn btn--small"
               style={{ background: "var(--down)" }}
@@ -227,13 +227,17 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
             >
               {resetting ? "Resetting…" : "Reset basket"}
             </button>
-            {resetResult && (
-              <p className={resetResult.ok ? "portfolio__stat-value up" : "portfolio__error"}>
-                {resetResult.message}
-              </p>
-            )}
-          </div>
-        )}
+          ) : (
+            <p className="add-funds__note">
+              {ts.hasSaved ? "Unlock above to use this." : "Save the trade secret above to use this."}
+            </p>
+          )}
+          {resetResult && (
+            <p className={resetResult.ok ? "portfolio__stat-value up" : "portfolio__error"}>
+              {resetResult.message}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
