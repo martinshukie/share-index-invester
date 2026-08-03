@@ -3,7 +3,7 @@
 // ?basket=ai selects which independent basket to report on. Basket
 // composition comes from Upstash storage (see baskets.js).
 
-import { getBasketSymbols } from "./baskets.js";
+import { getBasketSymbols, getResetTimestamp, getBankScale } from "./baskets.js";
 import { getAlpacaConfig } from "./alpaca-config.js";
 
 async function getPosition(base, headers, symbol) {
@@ -13,7 +13,7 @@ async function getPosition(base, headers, symbol) {
   return r.json();
 }
 
-function computeBanked(orders, basketSymbols) {
+function computeBanked(orders, basketSymbols, sinceTs) {
   let total = 0;
   const bySymbol = {};
   basketSymbols.forEach((s) => (bySymbol[s] = 0));
@@ -23,7 +23,8 @@ function computeBanked(orders, basketSymbols) {
       const parts = id.split("-");
       const amt = parseFloat(parts[1]);
       const symbol = parts[2];
-      if (!isNaN(amt) && bySymbol[symbol] != null) {
+      const submittedAt = new Date(o.submitted_at).getTime();
+      if (!isNaN(amt) && bySymbol[symbol] != null && submittedAt >= sinceTs) {
         total += amt;
         bySymbol[symbol] += amt;
       }
@@ -46,17 +47,19 @@ export default async function handler(req, res) {
   const basketSymbols = await getBasketSymbols(basketName);
 
   try {
-    const [accountRes, allOrdersRes, recentOrdersRes, ...positionResults] = await Promise.all([
+    const [accountRes, allOrdersRes, recentOrdersRes, resetTs, bankScale, ...positionResults] = await Promise.all([
       fetch(`${base}/v2/account`, { headers }),
       fetch(`${base}/v2/orders?status=all&limit=500&direction=desc`, { headers }),
       fetch(`${base}/v2/orders?status=all&limit=10&direction=desc`, { headers }),
+      getResetTimestamp(basketName),
+      getBankScale(basketName),
       ...basketSymbols.map((symbol) => getPosition(base, headers, symbol)),
     ]);
 
     const account = accountRes.ok ? await accountRes.json() : null;
     const allOrders = allOrdersRes.ok ? await allOrdersRes.json() : [];
     const recentOrders = recentOrdersRes.ok ? await recentOrdersRes.json() : [];
-    const banked = computeBanked(allOrders, basketSymbols);
+    const banked = computeBanked(allOrders, basketSymbols, resetTs);
 
     const holdings = basketSymbols.map((symbol, i) => {
       const p = positionResults[i];
@@ -78,6 +81,7 @@ export default async function handler(req, res) {
     res.status(200).json({
       basket: basketName,
       isLive,
+      bankScale,
       cash: account ? parseFloat(account.cash) : null,
       equity: account ? parseFloat(account.equity) : null,
       holdings: holdings.filter((h) => h.marketValue > 0 || h.banked > 0),

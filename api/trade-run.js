@@ -20,7 +20,7 @@
 //
 // Requires a ?secret= query param matching TRADE_CRON_SECRET.
 
-import { getBasketSymbols } from "./baskets.js";
+import { getBasketSymbols, getResetTimestamp, getBankScale } from "./baskets.js";
 import { getAlpacaConfig } from "./alpaca-config.js";
 
 const START_STAKE = 250;
@@ -56,7 +56,7 @@ async function buyNotional(base, headers, symbol, notional, clientOrderId) {
   return r.json();
 }
 
-async function getTotalBanked(base, headers, basketSymbols) {
+async function getTotalBanked(base, headers, basketSymbols, sinceTs) {
   const r = await fetch(`${base}/v2/orders?status=all&limit=500&direction=desc`, { headers });
   if (!r.ok) return 0;
   const orders = await r.json();
@@ -67,7 +67,8 @@ async function getTotalBanked(base, headers, basketSymbols) {
       const parts = id.split("-");
       const amt = parseFloat(parts[1]);
       const symbol = parts[2];
-      if (!isNaN(amt) && basketSymbols.includes(symbol)) total += amt;
+      const submittedAt = new Date(o.submitted_at).getTime();
+      if (!isNaN(amt) && basketSymbols.includes(symbol) && submittedAt >= sinceTs) total += amt;
     }
   }
   return total;
@@ -123,12 +124,13 @@ export default async function handler(req, res) {
 
     const currentValue = positions.reduce((sum, p) => (p ? sum + parseFloat(p.market_value) : sum), 0);
     const cycleStartValue = positions.reduce((sum, p) => (p ? sum + parseFloat(p.cost_basis) : sum), 0);
-    const totalBanked = await getTotalBanked(base, headers, basketSymbols);
+    const [resetTs, bankScale] = await Promise.all([getResetTimestamp(basketName), getBankScale(basketName)]);
+    const totalBanked = await getTotalBanked(base, headers, basketSymbols, resetTs);
     const wealth = totalBanked + currentValue;
 
     let tierCeiling = START_STAKE * 2;
     while (wealth >= tierCeiling) tierCeiling *= 2;
-    const bankIncrement = tierCeiling / 10;
+    const bankIncrement = (tierCeiling / 10) * bankScale;
 
     if (currentValue >= cycleStartValue + bankIncrement) {
       const reinvestValue = currentValue - bankIncrement;

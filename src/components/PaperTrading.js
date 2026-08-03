@@ -8,32 +8,29 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
   const [addFundsResult, setAddFundsResult] = useState(null);
   const [addingFunds, setAddingFunds] = useState(false);
   const [typedSecret, setTypedSecret] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [resetResult, setResetResult] = useState(null);
 
   const ts = useTradeSecret();
 
+  const load = React.useCallback(() => {
+    fetch(`/api/trade-status?basket=${basket}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.error) setError(d.error);
+        else {
+          setStatus(d);
+          setError(null);
+        }
+      })
+      .catch(() => setError("Couldn't reach the trading account."));
+  }, [basket]);
+
   useEffect(() => {
-    let cancelled = false;
-    function load() {
-      fetch(`/api/trade-status?basket=${basket}`)
-        .then((r) => r.json())
-        .then((d) => {
-          if (!cancelled) {
-            if (d.error) setError(d.error);
-            else {
-              setStatus(d);
-              setError(null);
-            }
-          }
-        })
-        .catch(() => !cancelled && setError("Couldn't reach the trading account."));
-    }
     load();
     const id = setInterval(load, 60000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [basket]);
+    return () => clearInterval(id);
+  }, [load]);
 
   async function addFunds() {
     const secret = ts.secret;
@@ -57,6 +54,33 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
       setAddFundsResult({ ok: false, message: "Request failed." });
     } finally {
       setAddingFunds(false);
+    }
+  }
+
+  async function resetBasket() {
+    const secret = ts.secret;
+    if (!secret) return;
+    const warning = status?.isLive
+      ? `This will SELL ALL LIVE positions in this basket back to cash (REAL MONEY) and zero its banked total. This cannot be undone. Continue?`
+      : `This will sell all paper positions in this basket back to cash and zero its banked total (simulated money only). This cannot be undone. Continue?`;
+    if (!window.confirm(warning)) return;
+    setResetting(true);
+    setResetResult(null);
+    try {
+      const res = await fetch(
+        `/api/reset-basket?secret=${encodeURIComponent(secret)}&basket=${basket}`,
+        { method: "POST" }
+      );
+      const data = await res.json();
+      if (data.error) setResetResult({ ok: false, message: data.error });
+      else {
+        setResetResult({ ok: true, message: "Basket reset — positions closed and banked total zeroed." });
+        load();
+      }
+    } catch (e) {
+      setResetResult({ ok: false, message: "Request failed." });
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -186,6 +210,29 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
               Forget saved secret
             </button>
           </p>
+        )}
+
+        {ts.hasSaved && ts.secret && (
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--hairline)" }}>
+            <h4>Reset basket</h4>
+            <p className="add-funds__note">
+              Sells all current positions in this basket back to cash and zeroes its banked
+              total. The strategy starts this basket over from scratch on its next run.
+            </p>
+            <button
+              className="btn btn--small"
+              style={{ background: "var(--down)" }}
+              onClick={resetBasket}
+              disabled={resetting}
+            >
+              {resetting ? "Resetting…" : "Reset basket"}
+            </button>
+            {resetResult && (
+              <p className={resetResult.ok ? "portfolio__stat-value up" : "portfolio__error"}>
+                {resetResult.message}
+              </p>
+            )}
+          </div>
         )}
       </div>
     </div>
