@@ -6,7 +6,7 @@
 
 import { getTradingMode, setTradingMode, liveKeysConfigured } from "./alpaca-config.js";
 
-const CONFIRM_PHRASE = "I_UNDERSTAND_THIS_IS_REAL_MONEY";
+const CONFIRM_PHRASE = "go live";
 
 export default async function handler(req, res) {
   if (!req.query.action) {

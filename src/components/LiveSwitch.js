@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useTradeSecret } from "../useTradeSecret";
 
-const CONFIRM_PHRASE = "I_UNDERSTAND_THIS_IS_REAL_MONEY";
+const CONFIRM_PHRASE = "go live";
 
 // Global paper/live switch - affects BOTH baskets at once, since they
 // share one underlying Alpaca account. Going live requires the trade
