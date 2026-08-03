@@ -10,13 +10,9 @@ export default function PriceChart({ series, label, unit, buyPrice, buyTime }) {
   }
 
   const closes = series.map((p) => p.close);
-  let min = Math.min(...closes);
-  let max = Math.max(...closes);
+  const min = Math.min(...closes);
+  const max = Math.max(...closes);
   const hasBuyMarker = buyPrice != null && Number.isFinite(buyPrice) && buyPrice > 0;
-  if (hasBuyMarker) {
-    min = Math.min(min, buyPrice);
-    max = Math.max(max, buyPrice);
-  }
   const span = max - min || 1;
 
   const points = series.map((p, i) => {
@@ -47,10 +43,7 @@ export default function PriceChart({ series, label, unit, buyPrice, buyTime }) {
         nearestIdx = i;
       }
     });
-    buyPoint = {
-      x: points[nearestIdx][0],
-      y: H - PAD - ((buyPrice - min) / span) * (H - PAD * 2),
-    };
+    buyPoint = { x: points[nearestIdx][0], y: points[nearestIdx][1] };
   }
 
   const startDate = new Date(series[0].t).toLocaleDateString(undefined, {
