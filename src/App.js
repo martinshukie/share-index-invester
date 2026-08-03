@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import "./App.css";
-import { ASSETS, RANGES, TRADE_BASKET, AI_BASKET, fetchQuote } from "./assets";
+import { ASSETS, RANGES, TRADE_BASKET, AI_BASKET, TRADABLE_SYMBOL, fetchQuote } from "./assets";
 import TickerTape from "./components/TickerTape";
 import PriceChart from "./components/PriceChart";
 import HoldingsScreen from "./components/HoldingsScreen";
@@ -22,6 +22,29 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [entryPrices, setEntryPrices] = useState({});
+
+  const refreshEntryPrices = useCallback(() => {
+    Promise.allSettled(
+      ["main", "ai"].map((b) => fetch(`/api/trade-status?basket=${b}`).then((r) => r.json()))
+    ).then((results) => {
+      const next = {};
+      results.forEach((r) => {
+        if (r.status === "fulfilled" && !r.value.error) {
+          (r.value.allHoldings || []).forEach((h) => {
+            if (h.qty > 0 && h.avgEntryPrice > 0) next[h.symbol] = h.avgEntryPrice;
+          });
+        }
+      });
+      setEntryPrices(next);
+    });
+  }, []);
+
+  useEffect(() => {
+    refreshEntryPrices();
+    const id = setInterval(refreshEntryPrices, REFRESH_MS);
+    return () => clearInterval(id);
+  }, [refreshEntryPrices]);
 
   const refreshQuotes = useCallback(() => {
     Promise.allSettled(ASSETS.map((a) => fetchQuote(a.symbol, "5d", "1d"))).then((results) => {
@@ -56,6 +79,7 @@ export default function App() {
   }, [selectedSymbol, range, loadSeries]);
 
   const asset = ASSETS.find((a) => a.symbol === selectedSymbol);
+  const buyPrice = entryPrices[TRADABLE_SYMBOL[selectedSymbol] || selectedSymbol];
 
   return (
     <div className="app">
@@ -104,7 +128,7 @@ export default function App() {
         {loading && <div className="loading">Loading {asset?.label}…</div>}
         {error && <div className="error">{error}</div>}
         {!loading && !error && series && (
-          <PriceChart series={series} label={asset?.label} unit={asset?.unit} />
+          <PriceChart series={series} label={asset?.label} unit={asset?.unit} buyPrice={buyPrice} />
         )}
 
         <h2 className="section-heading">Main basket — gold, oil &amp; equities</h2>
