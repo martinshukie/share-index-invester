@@ -13,6 +13,16 @@ async function getPosition(base, headers, symbol) {
   return r.json();
 }
 
+function findEntryTimes(orders, basketSymbols) {
+  const bySymbol = {};
+  for (const o of orders) {
+    if (o.side === "buy" && o.status === "filled" && basketSymbols.includes(o.symbol) && !bySymbol[o.symbol]) {
+      bySymbol[o.symbol] = o.filled_at || o.submitted_at;
+    }
+  }
+  return bySymbol;
+}
+
 function computeBanked(orders, basketSymbols, sinceTs) {
   let total = 0;
   const bySymbol = {};
@@ -60,6 +70,7 @@ export default async function handler(req, res) {
     const allOrders = allOrdersRes.ok ? await allOrdersRes.json() : [];
     const recentOrders = recentOrdersRes.ok ? await recentOrdersRes.json() : [];
     const banked = computeBanked(allOrders, basketSymbols, resetTs);
+    const entryTimes = findEntryTimes(allOrders, basketSymbols);
 
     const holdings = basketSymbols.map((symbol, i) => {
       const p = positionResults[i];
@@ -70,6 +81,7 @@ export default async function handler(req, res) {
         costBasis: p ? parseFloat(p.cost_basis) : 0,
         unrealizedPl: p ? parseFloat(p.unrealized_pl) : 0,
         avgEntryPrice: p ? parseFloat(p.avg_entry_price) : 0,
+        entryTime: p ? entryTimes[symbol] || null : null,
         banked: banked.bySymbol[symbol] || 0,
       };
     });
