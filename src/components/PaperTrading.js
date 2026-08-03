@@ -143,11 +143,31 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
       )}
 
       <div className="add-funds">
-        <h4>Add funds (simulated)</h4>
-        <p className="add-funds__note">
-          This is not a real bank connection — it adds simulated money to this basket only,
-          split evenly across it.
-        </p>
+        <h4>{status?.isLive ? "Add funds" : "Add funds (simulated)"}</h4>
+
+        {status?.isLive ? (
+          <>
+            <p className="add-funds__note">
+              This app never moves real money in or out of your account — deposits and
+              withdrawals on a live account have to go through Alpaca directly, where your
+              identity and bank link are already verified. Open your Alpaca dashboard, add
+              funds there, then come back — the strategy uses whatever cash is available.
+            </p>
+            <a
+              className="btn"
+              href="https://app.alpaca.markets/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open Alpaca dashboard ↗
+            </a>
+          </>
+        ) : (
+          <p className="add-funds__note">
+            This is not a real bank connection — it adds simulated money to this basket only,
+            split evenly across it.
+          </p>
+        )}
 
         {ts.error && <p className="portfolio__error">{ts.error}</p>}
 
@@ -176,7 +196,7 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
           </button>
         )}
 
-        {ts.hasSaved && ts.secret && (
+        {!status?.isLive && ts.hasSaved && ts.secret && (
           <>
             <input
               type="number"
@@ -188,15 +208,18 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
             <button className="btn" onClick={addFunds} disabled={addingFunds || !amount}>
               {addingFunds ? "Adding…" : "Add funds"}
             </button>{" "}
-            <button className="btn btn--small" onClick={ts.lock}>
-              Lock
-            </button>
             {addFundsResult && (
               <p className={addFundsResult.ok ? "portfolio__stat-value up" : "portfolio__error"}>
                 {addFundsResult.message}
               </p>
             )}
           </>
+        )}
+
+        {ts.hasSaved && ts.secret && (
+          <button className="btn btn--small" onClick={ts.lock}>
+            Lock
+          </button>
         )}
 
         {ts.hasSaved && (
