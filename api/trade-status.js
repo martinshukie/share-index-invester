@@ -3,7 +3,7 @@
 // ?basket=ai selects which independent basket to report on. Basket
 // composition comes from Upstash storage (see baskets.js).
 
-import { getBasketSymbols, getResetTimestamp, getBankScale } from "./baskets.js";
+import { getBasketSymbols, getResetTimestamp, getBankScale, getDailySnapshot } from "./baskets.js";
 import { getAlpacaConfig } from "./alpaca-config.js";
 
 async function getPosition(base, headers, symbol) {
@@ -57,14 +57,16 @@ export default async function handler(req, res) {
   const basketSymbols = await getBasketSymbols(basketName);
 
   try {
-    const [accountRes, allOrdersRes, recentOrdersRes, resetTs, bankScale, ...positionResults] = await Promise.all([
-      fetch(`${base}/v2/account`, { headers }),
-      fetch(`${base}/v2/orders?status=all&limit=500&direction=desc`, { headers }),
-      fetch(`${base}/v2/orders?status=all&limit=10&direction=desc`, { headers }),
-      getResetTimestamp(basketName),
-      getBankScale(basketName),
-      ...basketSymbols.map((symbol) => getPosition(base, headers, symbol)),
-    ]);
+    const [accountRes, allOrdersRes, recentOrdersRes, resetTs, bankScale, dailySnapshot, ...positionResults] =
+      await Promise.all([
+        fetch(`${base}/v2/account`, { headers }),
+        fetch(`${base}/v2/orders?status=all&limit=500&direction=desc`, { headers }),
+        fetch(`${base}/v2/orders?status=all&limit=10&direction=desc`, { headers }),
+        getResetTimestamp(basketName),
+        getBankScale(basketName),
+        getDailySnapshot(basketName),
+        ...basketSymbols.map((symbol) => getPosition(base, headers, symbol)),
+      ]);
 
     const account = accountRes.ok ? await accountRes.json() : null;
     const allOrders = allOrdersRes.ok ? await allOrdersRes.json() : [];
@@ -88,6 +90,9 @@ export default async function handler(req, res) {
 
     const totalHoldingsValue = holdings.reduce((sum, h) => sum + h.marketValue, 0);
     const basketRecentOrders = recentOrders.filter((o) => basketSymbols.includes(o.symbol));
+    const strategyWealth = banked.total + totalHoldingsValue;
+    const dailyChange = dailySnapshot ? strategyWealth - dailySnapshot.value : null;
+    const dailyChangePct = dailySnapshot && dailySnapshot.value > 0 ? (dailyChange / dailySnapshot.value) * 100 : null;
 
     res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=60");
     res.status(200).json({
@@ -100,7 +105,9 @@ export default async function handler(req, res) {
       allHoldings: holdings,
       totalHoldingsValue,
       strategyBanked: banked.total,
-      strategyWealth: banked.total + totalHoldingsValue,
+      strategyWealth,
+      dailyChange,
+      dailyChangePct,
       recentOrders: basketRecentOrders.slice(0, 10).map((o) => ({
         id: o.id,
         symbol: o.symbol,
