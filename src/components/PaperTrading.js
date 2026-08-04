@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTradeSecret } from "../useTradeSecret";
+import { useUsdToAud, formatAud } from "../useUsdToAud";
 
 export default function PaperTrading({ basket = "main", title = "Paper trading account (live, simulated money)" }) {
   const [status, setStatus] = useState(null);
@@ -12,6 +13,8 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
   const [resetResult, setResetResult] = useState(null);
 
   const ts = useTradeSecret();
+  const usdToAud = useUsdToAud();
+  const aud = (usd) => formatAud(usdToAud, usd);
 
   const load = React.useCallback(() => {
     fetch(`/api/trade-status?basket=${basket}`)
@@ -110,20 +113,31 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
               <div className="portfolio__stat-value">
                 {status.totalHoldingsValue != null ? `$${status.totalHoldingsValue.toFixed(2)}` : "—"}
               </div>
+              {aud(status.totalHoldingsValue) && (
+                <div className="portfolio__stat-aud">{aud(status.totalHoldingsValue)}</div>
+              )}
             </div>
             <div>
               <div className="portfolio__stat-label">Strategy banked</div>
               <div className="portfolio__stat-value up">
                 {status.strategyBanked != null ? `$${status.strategyBanked.toFixed(2)}` : "—"}
               </div>
+              {aud(status.strategyBanked) && <div className="portfolio__stat-aud">{aud(status.strategyBanked)}</div>}
             </div>
             <div>
               <div className="portfolio__stat-label">Total wealth</div>
               <div className="portfolio__stat-value up">
                 {status.strategyWealth != null ? `$${status.strategyWealth.toFixed(2)}` : "—"}
               </div>
+              {aud(status.strategyWealth) && <div className="portfolio__stat-aud">{aud(status.strategyWealth)}</div>}
             </div>
           </div>
+          {usdToAud != null && (
+            <p className="add-funds__note" style={{ marginTop: 10 }}>
+              All trading is in USD (Alpaca is a US brokerage) — AUD figures are a live reference
+              conversion only (1 USD ≈ {usdToAud.toFixed(4)} AUD), not a separate balance.
+            </p>
+          )}
 
           {status.recentOrders?.length > 0 && (
             <ul className="cycle-events" style={{ marginTop: 20 }}>
@@ -199,11 +213,16 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
           <>
             <input
               type="number"
-              placeholder="Amount"
+              placeholder="Amount (USD)"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               className="add-funds__input"
             />
+            {aud(parseFloat(amount)) && (
+              <p className="add-funds__note" style={{ marginTop: -6 }}>
+                ${amount} USD ≈ {aud(parseFloat(amount))}
+              </p>
+            )}
             <button className="btn" onClick={addFunds} disabled={addingFunds || !amount}>
               {addingFunds ? "Adding…" : "Add funds"}
             </button>{" "}

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTradeSecret } from "../useTradeSecret";
+import { useUsdToAud, formatAud } from "../useUsdToAud";
 
 export default function AssetTable({ basket = "main", symbols = [] }) {
   const [status, setStatus] = useState(null);
@@ -10,6 +11,8 @@ export default function AssetTable({ basket = "main", symbols = [] }) {
   const [typedSecret, setTypedSecret] = useState("");
 
   const ts = useTradeSecret();
+  const usdToAud = useUsdToAud();
+  const aud = (usd) => formatAud(usdToAud, usd);
 
   function load() {
     fetch(`/api/trade-status?basket=${basket}`)
@@ -127,9 +130,13 @@ export default function AssetTable({ basket = "main", symbols = [] }) {
                   {up ? "▲" : "▼"} {Math.abs(pct).toFixed(1)}%
                 </span>
               )}
+              {aud(h.marketValue) && <span className="asset-table__aud">{aud(h.marketValue)}</span>}
             </span>
             <span>{h.avgEntryPrice ? `$${h.avgEntryPrice.toFixed(2)}` : "—"}</span>
-            <span className="up">${h.banked.toFixed(2)}</span>
+            <span className="up">
+              ${h.banked.toFixed(2)}
+              {aud(h.banked) && <span className="asset-table__aud">{aud(h.banked)}</span>}
+            </span>
             <input
               type="number"
               placeholder="$"

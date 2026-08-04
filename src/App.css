@@ -593,6 +593,13 @@
 .portfolio__stat-value.up { color: var(--up); }
 .portfolio__stat-value.down { color: var(--down); }
 
+.portfolio__stat-aud {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 1px;
+}
+
 /* ---------- Footer ---------- */
 .app__footer {
   max-width: 720px;
@@ -646,6 +653,13 @@ button:focus-visible {
 
 .asset-table__pct.up { color: var(--up); }
 .asset-table__pct.down { color: var(--down); }
+
+.asset-table__aud {
+  display: block;
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 1px;
+}
 
 /* ---------- Live/paper mode badge ---------- */
 .mode-badge {
