@@ -57,6 +57,18 @@ async function buyNotional(base, headers, symbol, notional, clientOrderId) {
   return r.json();
 }
 
+// A previous bank cycle's close order can still be unfilled next tick -
+// e.g. GLD/USO/AAPL/etc only trade during NYSE hours, so a close placed
+// after-hours sits pending until the next session. Retrying closePosition
+// on a symbol whose whole qty is already held_for_orders 403s and crashes
+// the run, so check for that first and just wait it out.
+async function getOpenOrderSymbols(base, headers) {
+  const r = await fetch(`${base}/v2/orders?status=open&limit=500`, { headers });
+  if (!r.ok) return new Set();
+  const orders = await r.json();
+  return new Set(orders.map((o) => o.symbol));
+}
+
 async function getTotalBanked(base, headers, basketSymbols, sinceTs) {
   const r = await fetch(`${base}/v2/orders?status=all&limit=500&direction=desc`, { headers });
   if (!r.ok) return 0;
@@ -140,6 +152,19 @@ export default async function handler(req, res) {
     const bankIncrement = (tierCeiling / 10) * bankScale;
 
     if (currentValue >= cycleStartValue + bankIncrement) {
+      const openOrderSymbols = await getOpenOrderSymbols(base, headers);
+      const pendingSymbols = held.filter((s) => openOrderSymbols.has(s));
+      if (pendingSymbols.length > 0) {
+        res.status(200).json({
+          basket: basketName,
+          isLive,
+          action: "waiting_on_pending_order",
+          pendingSymbols,
+          note: "A previous close/reopen order for this basket hasn't filled yet (likely placed outside market hours) - skipping this cycle to avoid closing the same position twice.",
+        });
+        return;
+      }
+
       const reinvestValue = currentValue - bankIncrement;
       const orders = await closeAndReopenEvenly(base, headers, basketSymbols, held, reinvestValue, bankIncrement);
       res.status(200).json({
