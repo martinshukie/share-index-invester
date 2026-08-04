@@ -2,12 +2,7 @@
 // a real "total portfolio value over time" chart, same idea as the
 // screenshot reference.
 
-function alpacaHeaders() {
-  return {
-    "APCA-API-KEY-ID": process.env.APCA_API_KEY_ID,
-    "APCA-API-SECRET-KEY": process.env.APCA_API_SECRET_KEY,
-  };
-}
+import { getAlpacaConfig } from "./alpaca-config.js";
 
 const PERIOD_MAP = {
   "1D": { period: "1D", timeframe: "5Min" },
@@ -19,17 +14,20 @@ const PERIOD_MAP = {
 };
 
 export default async function handler(req, res) {
-  if (!process.env.APCA_API_KEY_ID || !process.env.APCA_API_SECRET_KEY) {
-    res.status(500).json({ error: "Alpaca API keys not configured" });
+  const config = await getAlpacaConfig();
+  if (!config.keysConfigured) {
+    res.status(500).json({
+      error: config.isLive ? "Live Alpaca API keys not configured" : "Paper Alpaca API keys not configured",
+    });
     return;
   }
+  const { base, headers } = config;
 
   const range = PERIOD_MAP[req.query.range] || PERIOD_MAP["1M"];
-  const base = process.env.APCA_API_BASE_URL || "https://paper-api.alpaca.markets";
 
   try {
     const url = `${base}/v2/account/portfolio/history?period=${range.period}&timeframe=${range.timeframe}`;
-    const r = await fetch(url, { headers: alpacaHeaders() });
+    const r = await fetch(url, { headers });
     if (!r.ok) {
       res.status(r.status).json({ error: `Upstream error ${r.status}` });
       return;
