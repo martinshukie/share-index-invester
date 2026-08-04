@@ -13,7 +13,7 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
   const [resetResult, setResetResult] = useState(null);
 
   const ts = useTradeSecret();
-  const usdToAud = useUsdToAud();
+  const { rate: usdToAud, error: fxError } = useUsdToAud();
   const aud = (usd) => formatAud(usdToAud, usd);
 
   const load = React.useCallback(() => {
@@ -136,6 +136,11 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
             <p className="add-funds__note" style={{ marginTop: 10 }}>
               All trading is in USD (Alpaca is a US brokerage) — AUD figures are a live reference
               conversion only (1 USD ≈ {usdToAud.toFixed(4)} AUD), not a separate balance.
+            </p>
+          )}
+          {fxError && (
+            <p className="add-funds__note" style={{ marginTop: 10 }}>
+              AUD conversion unavailable right now ({fxError}) — figures above are USD only.
             </p>
           )}
 

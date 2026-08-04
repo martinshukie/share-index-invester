@@ -11,7 +11,7 @@ export default function AssetTable({ basket = "main", symbols = [] }) {
   const [typedSecret, setTypedSecret] = useState("");
 
   const ts = useTradeSecret();
-  const usdToAud = useUsdToAud();
+  const { rate: usdToAud } = useUsdToAud();
   const aud = (usd) => formatAud(usdToAud, usd);
 
   function load() {
