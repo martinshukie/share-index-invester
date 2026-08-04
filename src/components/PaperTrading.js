@@ -131,6 +131,18 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
               </div>
               {aud(status.strategyWealth) && <div className="portfolio__stat-aud">{aud(status.strategyWealth)}</div>}
             </div>
+            <div>
+              <div className="portfolio__stat-label">Today</div>
+              {status.dailyChange != null ? (
+                <div className={`portfolio__stat-value ${status.dailyChange >= 0 ? "up" : "down"}`}>
+                  {status.dailyChange >= 0 ? "+" : ""}
+                  ${status.dailyChange.toFixed(2)} ({status.dailyChangePct >= 0 ? "+" : ""}
+                  {status.dailyChangePct.toFixed(2)}%)
+                </div>
+              ) : (
+                <div className="portfolio__stat-value">—</div>
+              )}
+            </div>
           </div>
           {usdToAud != null && (
             <p className="add-funds__note" style={{ marginTop: 10 }}>

@@ -20,10 +20,11 @@
 //
 // Requires a ?secret= query param matching TRADE_CRON_SECRET.
 
-import { getBasketSymbols, getResetTimestamp, getBankScale } from "./baskets.js";
+import { getBasketSymbols, getResetTimestamp, getBankScale, getDailySnapshot, setDailySnapshot } from "./baskets.js";
 import { getAlpacaConfig } from "./alpaca-config.js";
 
 const START_STAKE = 250;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 async function getPosition(base, headers, symbol) {
   const r = await fetch(`${base}/v2/positions/${symbol}`, { headers });
@@ -118,6 +119,7 @@ export default async function handler(req, res) {
       for (const symbol of basketSymbols) {
         orders.push(await buyNotional(base, headers, symbol, perAsset));
       }
+      await setDailySnapshot(basketName, START_STAKE, Date.now());
       res.status(200).json({ basket: basketName, isLive, action: "opened_initial_basket", notional: START_STAKE, orders });
       return;
     }
@@ -127,6 +129,11 @@ export default async function handler(req, res) {
     const [resetTs, bankScale] = await Promise.all([getResetTimestamp(basketName), getBankScale(basketName)]);
     const totalBanked = await getTotalBanked(base, headers, basketSymbols, resetTs);
     const wealth = totalBanked + currentValue;
+
+    const snapshot = await getDailySnapshot(basketName);
+    if (!snapshot || Date.now() - snapshot.ts >= DAY_MS) {
+      await setDailySnapshot(basketName, wealth, Date.now());
+    }
 
     let tierCeiling = START_STAKE * 2;
     while (wealth >= tierCeiling) tierCeiling *= 2;

@@ -82,6 +82,29 @@ export async function setBankScale(basketName, scale) {
   return kvSet(`bank-scale:${basketName}`, String(clamped));
 }
 
+// A single rolling "value ~24h ago" snapshot per basket, used to show
+// daily change. Alpaca's account-level equity/last_equity fields cover
+// both baskets (and MrCrypto, which shares this same account) combined,
+// so they can't answer "how did just this basket do today" - this
+// tracks each basket's own strategy wealth instead. Written by
+// trade-run.js (rolled forward once it's more than a day old), read by
+// trade-status.js for display.
+export async function getDailySnapshot(basketName) {
+  const [rawValue, rawTs] = await Promise.all([
+    kvGet(`daily-snapshot-value:${basketName}`),
+    kvGet(`daily-snapshot-ts:${basketName}`),
+  ]);
+  const value = parseFloat(rawValue);
+  const ts = parseInt(rawTs, 10);
+  if (!Number.isFinite(value) || !Number.isFinite(ts)) return null;
+  return { value, ts };
+}
+
+export async function setDailySnapshot(basketName, value, ts) {
+  await kvSet(`daily-snapshot-value:${basketName}`, String(value));
+  await kvSet(`daily-snapshot-ts:${basketName}`, String(ts));
+}
+
 export default async function handler(req, res) {
   const basketName = req.query.basket === "ai" ? "ai" : "main";
 
