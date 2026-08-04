@@ -2,7 +2,7 @@
 // a real "total portfolio value over time" chart, same idea as the
 // screenshot reference.
 
-import { getAlpacaConfig } from "./alpaca-config.js";
+import { getAlpacaConfig } from "./_lib/alpaca-config.js";
 
 const PERIOD_MAP = {
   "1D": { period: "1D", timeframe: "5Min" },

@@ -6,7 +6,7 @@
 // otherwise. Protected by the same secret as trade-run.js.
 
 import { getBasketSymbols } from "./baskets.js";
-import { getAlpacaConfig } from "./alpaca-config.js";
+import { getAlpacaConfig } from "./_lib/alpaca-config.js";
 
 async function buyNotional(base, headers, symbol, notional) {
   const r = await fetch(`${base}/v2/orders`, {

@@ -4,7 +4,7 @@
 // back to paper only requires the secret, since going back to safety
 // should never be the hard path.
 
-import { getTradingMode, setTradingMode, liveKeysConfigured } from "./alpaca-config.js";
+import { getTradingMode, setTradingMode, liveKeysConfigured } from "./_lib/alpaca-config.js";
 
 const CONFIRM_PHRASE = "go live";
 

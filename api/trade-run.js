@@ -21,7 +21,7 @@
 // Requires a ?secret= query param matching TRADE_CRON_SECRET.
 
 import { getBasketSymbols, getResetTimestamp, getBankScale, getDailySnapshot, setDailySnapshot } from "./baskets.js";
-import { getAlpacaConfig } from "./alpaca-config.js";
+import { getAlpacaConfig } from "./_lib/alpaca-config.js";
 
 const START_STAKE = 250;
 const DAY_MS = 24 * 60 * 60 * 1000;

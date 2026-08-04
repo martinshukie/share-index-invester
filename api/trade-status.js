@@ -4,7 +4,7 @@
 // composition comes from Upstash storage (see baskets.js).
 
 import { getBasketSymbols, getResetTimestamp, getBankScale, getDailySnapshot } from "./baskets.js";
-import { getAlpacaConfig } from "./alpaca-config.js";
+import { getAlpacaConfig } from "./_lib/alpaca-config.js";
 
 async function getPosition(base, headers, symbol) {
   const r = await fetch(`${base}/v2/positions/${symbol}`, { headers });
