@@ -4,7 +4,7 @@
 // directly. Protected by the same secret as trade-run.js.
 
 import { getAllSymbols } from "./baskets.js";
-import { getAlpacaConfig } from "./alpaca-config.js";
+import { getAlpacaConfig } from "./_lib/alpaca-config.js";
 
 export default async function handler(req, res) {
   const secret = req.query.secret;

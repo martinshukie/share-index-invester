@@ -11,7 +11,7 @@
 // in the Alpaca dashboard. Protected by the same secret as trade-run.js.
 
 import { getBasketSymbols, setResetTimestamp } from "./baskets.js";
-import { getAlpacaConfig } from "./alpaca-config.js";
+import { getAlpacaConfig } from "./_lib/alpaca-config.js";
 
 async function getPosition(base, headers, symbol) {
   const r = await fetch(`${base}/v2/positions/${symbol}`, { headers });
