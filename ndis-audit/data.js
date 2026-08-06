@@ -22,6 +22,7 @@ const POLICIES = [
         'All policies in this pack are formally adopted, reviewed annually (or sooner after an incident, complaint, or regulatory change), and version-controlled.',
         'Statutory obligations are tracked and kept current: NDIS Worker Screening Check, Working with Children Check (if supporting participants under 18), professional indemnity and public liability insurance, and any required licences.',
         'A structured decision-making record is kept for significant business decisions (e.g. taking on a new participant with complex needs, ceasing a service) using the Business Decision Log.',
+        'Compliance is treated as a serious business risk, not a formality: the National Disability Insurance Scheme Amendment (Integrity and Safeguarding) Act 2026 (Royal Assent 8 April 2026) significantly increased civil penalties for Code of Conduct and registration breaches — including a new "serious contravention" category for significant failures or systemic non-compliance — and expanded the NDIS Commission\'s enforcement powers.',
       ])}
       <h4>Procedure</h4>
       ${ol([
@@ -123,7 +124,7 @@ const POLICIES = [
       organisation would apply to staff.</p>
       <h4>Policy</h4>
       ${ul([
-        'A current NDIS Worker Screening Check clearance is held at all times and renewed before expiry (checks are valid for 5 years).',
+        'A current NDIS Worker Screening Check clearance is held at all times and renewed before expiry (checks remain valid for 5 years; a lapsed clearance means supports must stop immediately, with no grace period — note that the first wave of 5-year renewals, for clearances first issued from February 2021, began falling due from February 2026 and continues through 2026–27, so renewal timing deserves particular attention now).',
         'Relevant qualifications, first aid/CPR certification, and any required checks (e.g. Working with Children Check) are current and evidenced in the Compliance Folder.',
         'Skills and knowledge are kept current through at least one continuing professional development (CPD) activity relevant to disability support per quarter, logged on the CPD Log.',
         'A self-assessment against the NDIS Code of Conduct and this policy pack is completed annually.',
@@ -259,15 +260,15 @@ const POLICIES = [
       <p>To ensure fair, transparent and compliant billing of NDIS-funded supports.</p>
       <h4>Policy</h4>
       ${ul([
-        'Fees charged do not exceed the applicable NDIS Pricing Arrangements and Price Limits in force at the time of service.',
+        'Fees charged do not exceed the applicable maximum prices set out in the NDIS Pricing Schedule (the annual pricing publication that, from 1 July 2026, replaced the former "NDIS Pricing Arrangements and Price Limits") in force at the time of service.',
         'Only supports actually delivered are billed; cancellation charges follow the current NDIS short-notice cancellation policy and are explained to the participant in the Service Agreement before they apply.',
         'Invoices/claims clearly itemise date, support item number, duration and cost, and are issued promptly (within 7 days of service where the participant is self- or plan-managed).',
         'Business and participant funds are never mixed; {{PROVIDER_NAME}} does not have access to, or control of, a participant\'s NDIS plan funds or bank accounts.',
-        'Financial records (invoices, payments, price guide versions used) are retained for audit and taxation purposes.',
+        'Financial records (invoices, payments, price schedule versions used) are retained for audit and taxation purposes.',
       ])}
       <h4>Procedure</h4>
       ${ol([
-        'Check the current NDIS Pricing Arrangements and Price Limits before setting or updating the Fee Schedule.',
+        'Check the current NDIS Pricing Schedule (published alongside the NDIA\'s Annual Pricing Review, effective 1 July each year) before setting or updating the Fee Schedule.',
         'Record each service delivered (date, time, support item, duration) at the time of or immediately after the visit.',
         'Issue invoices/claims within 7 days, referencing the correct support item number and the Service Agreement.',
         'Reconcile invoices issued against payments received monthly.',
@@ -277,9 +278,9 @@ const POLICIES = [
     forms: ['fee-schedule'],
     synopsis: {
       purpose: 'Ensures billing is accurate, transparent and within NDIS price limits.',
-      keyControls: ['Compliance with current NDIS Price Guide', 'Billing only for supports delivered', 'Prompt, itemised invoicing', 'No access to participant funds'],
-      evidence: ['Fee Schedule & NDIS Price Guide Reference', 'Invoices/claims records'],
-      reviewCycle: 'On each NDIS Price Guide update (typically annually) and reconciled monthly',
+      keyControls: ['Compliance with the current NDIS Pricing Schedule', 'Billing only for supports delivered', 'Prompt, itemised invoicing', 'No access to participant funds'],
+      evidence: ['Fee Schedule & NDIS Pricing Schedule Reference', 'Invoices/claims records'],
+      reviewCycle: 'On each annual NDIS Pricing Schedule update (effective 1 July) and reconciled monthly',
     },
   },
 
@@ -306,6 +307,7 @@ const POLICIES = [
         'Never use restrictive practices except as a last resort, in line with the Restrictive Practices Policy, and in the least restrictive way possible.',
       ])}
       <p>Participants have the right to: be treated with respect; make their own choices; receive supports free from abuse, neglect, violence and exploitation; access an interpreter or advocate; make a complaint without fear of reprisal; and access their own information.</p>
+      <p>The Code of Conduct applies whether or not a provider is NDIS-registered, and the NDIS Commission can investigate any person delivering NDIS-funded supports. Since the National Disability Insurance Scheme Amendment (Integrity and Safeguarding) Act 2026, breaches carry substantially higher civil penalties (standard contraventions up to $52,500 for an individual; serious contraventions — significant failures or systemic non-compliance — attracting penalties in the millions), so this commitment is treated as a legal, not just professional, obligation.</p>
       <h4>Procedure</h4>
       ${ol([
         'Provide every new participant a copy of this policy and the Service Charter in the onboarding pack, in an accessible format.',
@@ -370,8 +372,11 @@ const POLICIES = [
       <h4>Policy</h4>
       ${ul([
         'An incident is any event that has caused, or could have caused, harm to a participant during the provision of supports.',
-        'A reportable incident (which must be notified to the NDIS Commission) includes: the death of a participant; serious injury; abuse or neglect of a participant; unlawful sexual or physical contact/assault; sexual misconduct; and unauthorised use of a restrictive practice.',
-        'Reportable incidents are notified to the NDIS Commission within 24 hours of {{PROVIDER_NAME}} becoming aware (or as soon as practicable), with a detailed report within 5 business days.',
+        'A reportable incident (which must be notified to the NDIS Commission) includes: the death of a participant; serious injury of a participant; abuse or neglect of a participant; unlawful sexual or physical contact with, or assault of, a participant; sexual misconduct involving a participant; and unauthorised use of a restrictive practice.',
+        '<strong>Priority incidents</strong> — death or serious injury of a participant — are notified to the NDIS Commission within <strong>24 hours</strong> of {{PROVIDER_NAME}} becoming aware.',
+        'The other reportable incident categories (abuse/neglect, unlawful sexual or physical contact/assault, sexual misconduct, unauthorised restrictive practice) are notified within <strong>5 business days</strong>, unless the incident involves an ongoing or immediate risk to a participant\'s safety — or, for an unauthorised restrictive practice, actually caused harm — in which case it is treated as a priority incident and notified within 24 hours instead.',
+        'A detailed written report follows the initial notification within 5 business days for every reportable incident.',
+        'When it is genuinely unclear whether an incident is a priority incident, it is notified within 24 hours — the shorter timeframe is used by default.',
         'Immediate participant safety and wellbeing (including medical attention) always comes first, before administrative reporting steps.',
         'All incidents, reportable or not, are recorded, and used to identify and act on any pattern or systemic risk.',
       ])}
@@ -379,19 +384,20 @@ const POLICIES = [
       ${ol([
         'Ensure the participant is safe; call 000 for emergencies; provide or arrange first aid.',
         'Notify the participant\'s emergency contact, support coordinator and/or nominee as appropriate.',
-        'Complete the Incident Report Form as soon as practicable, and always within 24 hours.',
-        'Assess against the reportable incident criteria using the Reportable Incident Notification Checklist.',
-        'If reportable: submit the initial notification to the NDIS Commission within 24 hours via the NDIS Commission Portal, followed by the detailed report within 5 business days.',
+        'Complete the Incident Report Form as soon as practicable.',
+        'Assess against the reportable incident criteria using the Reportable Incident Notification Checklist, including whether it is a priority incident.',
+        'If reportable: submit the initial notification to the NDIS Commission via the NDIS Commission Portal within 24 hours (priority incidents) or 5 business days (other reportable incidents, default to 24 hours if unsure), followed by the detailed written report within 5 business days.',
         'Review the incident for root cause and update the Risk Register/relevant policy if a systemic control is needed.',
         'Keep all incident records in the Compliance Folder for audit.',
       ])}
+      <p><em>Reportable incident categories and timeframes are set by the NDIS Commission and can change — always confirm the current thresholds at ndiscommission.gov.au before relying on this summary.</em></p>
     `,
     forms: ['incident-report-form', 'reportable-incident-checklist'],
     synopsis: {
       purpose: 'Ensures a safe, timely response to incidents and correct notification of reportable incidents.',
-      keyControls: ['Participant safety first', '24-hour notification for reportable incidents', 'Detailed report within 5 business days', 'Root cause review feeding back into Risk Register'],
+      keyControls: ['Participant safety first', '24-hour notification for priority incidents (death/serious injury)', '5 business days for other reportable incidents (24 hours if unsure or risk is ongoing)', 'Detailed written report within 5 business days', 'Root cause review feeding back into Risk Register'],
       evidence: ['Incident Report Form', 'Reportable Incident Notification Checklist', 'NDIS Commission Portal notification records'],
-      reviewCycle: 'Each incident in real time; policy reviewed annually',
+      reviewCycle: 'Each incident in real time; policy reviewed annually, and timeframes re-checked against ndiscommission.gov.au',
     },
   },
   {
@@ -693,18 +699,26 @@ const FORMS = [
   { id: 'records-schedule', title: 'Records Retention & Disposal Schedule', policyIds: ['privacy-records'],
     bodyHtml: table(['Record type', 'Minimum retention', 'Disposal method'],
       [['Service records (support plans, notes, incident reports)', '7 years from last support provided', 'Secure shred / permanent digital deletion'], ['Financial records (invoices, claims)', '5 years (taxation) / 7 years if also a service record', 'Secure shred / permanent digital deletion'], ['Worker screening / compliance evidence', 'While current + 1 year after renewal or cessation', 'Secure shred / permanent digital deletion']]) },
-  { id: 'fee-schedule', title: 'Fee Schedule & NDIS Price Guide Reference', policyIds: ['financial-management'],
-    bodyHtml: `<p>Record the NDIS support items delivered and current price limits (update whenever the NDIS Pricing Arrangements and Price Limits changes).</p>` +
-      table(['Support item number', 'Description', 'Unit', 'Price charged', 'Price Guide version used'], [['', '', '', '', '']]) },
+  { id: 'fee-schedule', title: 'Fee Schedule & NDIS Pricing Schedule Reference', policyIds: ['financial-management'],
+    bodyHtml: `<p>Record the NDIS support items delivered and current maximum prices (update whenever the NDIS Pricing Schedule changes, effective 1 July each year — see the NDIA's Annual Pricing Review for the reasoning behind that year's prices).</p>` +
+      table(['Support item number', 'Description', 'Unit', 'Price charged', 'Pricing Schedule version used (e.g. 2026-27)'], [['', '', '', '', '']]) },
   { id: 'complaints-register', title: 'Complaints Register', policyIds: ['complaints'],
     bodyHtml: table(['Date received', 'Received from', 'How made', 'Summary', 'Action taken', 'Date resolved', 'Complainant satisfied?'], [['', '', '', '', '', '', '']]) },
   { id: 'incident-report-form', title: 'Incident Report Form', policyIds: ['incident-management', 'whs', 'medication', 'infection-control'],
     bodyHtml: table(['Field', 'Details'],
       [['Date/time of incident', ''], ['Participant(s) involved', ''], ['Location', ''], ['What happened (factual description)', ''], ['Immediate action taken', ''], ['Injuries/harm (if any)', ''], ['Who was notified (participant contact, support coordinator, etc.)', ''], ['Reportable incident? (see checklist)', ''], ['Follow-up / preventive action', ''], ['Completed by', '{{PROVIDER_NAME}}']]) },
   { id: 'reportable-incident-checklist', title: 'Reportable Incident Notification Checklist', policyIds: ['incident-management'],
-    bodyHtml: `<p>Notify the NDIS Quality and Safeguards Commission within 24 hours if the incident involves any of the following:</p>` +
-      ul(['Death of a participant', 'Serious injury of a participant', 'Abuse or neglect of a participant', 'Unlawful sexual or physical contact with, or assault of, a participant', 'Sexual misconduct involving a participant', 'Unauthorised use of a restrictive practice']) +
-      `<p>If any box is ticked: submit initial notification via the NDIS Commission Portal within 24 hours, then the detailed report within 5 business days.</p>` },
+    bodyHtml: `<p>Check whether the incident matches a reportable category, and how urgently it must be notified to the NDIS Quality and Safeguards Commission.</p>` +
+      table(['Category', 'Notify within'],
+        [
+          ['Death of a participant', '24 hours (priority incident)'],
+          ['Serious injury of a participant', '24 hours (priority incident)'],
+          ['Abuse or neglect of a participant', '5 business days — 24 hours if there is an ongoing/immediate safety risk'],
+          ['Unlawful sexual or physical contact with, or assault of, a participant', '5 business days — 24 hours if there is an ongoing/immediate safety risk'],
+          ['Sexual misconduct involving a participant', '5 business days — 24 hours if there is an ongoing/immediate safety risk'],
+          ['Unauthorised use of a restrictive practice', '5 business days — 24 hours if it resulted in harm'],
+        ]) +
+      `<p>If unsure which timeframe applies, use 24 hours. Submit the initial notification via the NDIS Commission Portal by the applicable deadline, then the detailed written report within 5 business days of the initial notification. These categories and timeframes are set by the NDIS Commission — reconfirm at ndiscommission.gov.au if it has been a while since this checklist was last reviewed.</p>` },
   { id: 'restrictive-practice-declaration', title: 'Restrictive Practice Statement / Nil Use Declaration', policyIds: ['restrictive-practices'],
     bodyHtml: `<p>{{BUSINESS_NAME}} confirms that no restrictive practices (seclusion, chemical, mechanical, physical or environmental restraint, or restriction of access to objects) are used in the supports provided to this participant, except where authorised under an NDIS Behaviour Support Plan prepared by a specialist behaviour support practitioner.</p>` +
       `<p>Participant: _____________________ Date: {{DATE}}<br/>Provider signature: {{PROVIDER_NAME}}</p>` },

@@ -27,12 +27,38 @@ npx serve ndis-audit
   (purpose, key controls, evidence, review cycle) — handy to give an auditor.
 - **Client Onboarding** — the referral-to-first-visit document set, plus a
   step-by-step onboarding checklist cross-referenced to the relevant policy.
-- **Provider Details** — enter your business name, ABN and contact details
-  once; they're saved in the browser (local storage only, nothing leaves
-  your device) and auto-filled into every document via `{{TOKENS}}`.
+- **Provider Details** — defaults to "Martin Shukie Independent NDIS Sole
+  Trader Support Services" / Martin Shukie; edit ABN and contact details
+  once on the Provider Details page. Saved in the browser (local storage
+  only, nothing leaves your device) and auto-filled into every document via
+  `{{TOKENS}}`.
 
 Each document has a status control (Not started / Drafted / Reviewed /
 Adopted), saved per-browser, and a Print / Save as PDF button.
+
+## Regulatory currency
+
+Content was checked against public NDIS Quality and Safeguards Commission
+guidance as at **August 2026**, and reflects two recent changes in
+particular:
+
+- The **National Disability Insurance Scheme Amendment (Integrity and
+  Safeguarding) Act 2026** (Royal Assent 8 April 2026) — substantially
+  higher civil penalties for Code of Conduct/registration breaches, a new
+  "serious contravention" category, and expanded NDIS Commission
+  enforcement powers.
+- The **NDIS Pricing Schedule 2026-27** (effective 1 July 2026), which
+  replaced the former "NDIS Pricing Arrangements and Price Limits" (PAPL) as
+  the document setting maximum support prices, published alongside the
+  NDIA's Annual Pricing Review.
+
+The Verification/Certification registration split used throughout this pack
+is still the current model, but a broader graduated, risk-proportionate
+registration model recommended by the NDIS Provider and Worker Registration
+Taskforce is expected to begin rolling out from 2027 — recheck
+[ndiscommission.gov.au](https://www.ndiscommission.gov.au) before relying on
+this pack much past that point, or after any further Practice Standards or
+registration announcement.
 
 ## Important
 
@@ -43,5 +69,6 @@ not legal advice — confirm current requirements against the NDIS Practice
 Standards and with your approved quality auditor before relying on them for
 your actual audit. If you later add supports that require **Certification**
 (e.g. specialist behaviour support, high-intensity daily personal
-activities), you'll need additional Supplementary Module policies not
+activities) or Supported Independent Living (mandatory registration from 1
+July 2026), you'll need additional Supplementary Module policies not
 included here.

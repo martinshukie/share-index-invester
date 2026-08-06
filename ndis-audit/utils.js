@@ -19,8 +19,8 @@ function table(headers, rows) {
 // Replace {{TOKEN}} placeholders with values from a settings object.
 function fillTokens(html, settings) {
   const map = {
-    BUSINESS_NAME: settings.businessName || '[Business/Trading Name]',
-    PROVIDER_NAME: settings.providerName || '[Your Full Name]',
+    BUSINESS_NAME: settings.businessName || 'Martin Shukie Independent NDIS Sole Trader Support Services',
+    PROVIDER_NAME: settings.providerName || 'Martin Shukie',
     ABN: settings.abn || '[ABN]',
     ADDRESS: settings.address || '[Business Address]',
     PHONE: settings.phone || '[Phone Number]',

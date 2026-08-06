@@ -21,8 +21,13 @@
     localStorage.setItem(key, JSON.stringify(val));
   }
 
+  const DEFAULT_SETTINGS = {
+    businessName: 'Martin Shukie Independent NDIS Sole Trader Support Services',
+    providerName: 'Martin Shukie',
+  };
+
   let statusMap = loadJSON(STATUS_KEY, {});
-  let settings = loadJSON(SETTINGS_KEY, {});
+  let settings = loadJSON(SETTINGS_KEY, DEFAULT_SETTINGS);
 
   function getStatus(key) {
     return statusMap[key] || 'not-started';
@@ -250,6 +255,7 @@
           ? `<div class="callout"><strong>Set up your provider details</strong> so your name, ABN and contact details are automatically filled into every document. <span class="chip" data-route="settings" style="margin-left:6px">Go to Provider Details</span></div>`
           : ''
       }
+      <div class="callout"><strong>Regulatory currency (as at August 2026):</strong> reflects the National Disability Insurance Scheme Amendment (Integrity and Safeguarding) Act 2026 (Royal Assent 8 April 2026, sharply higher civil penalties for Code of Conduct/registration breaches) and the NDIS Pricing Schedule 2026-27 (effective 1 July 2026, replacing the former "Pricing Arrangements and Price Limits"). The Verification/Certification registration model used throughout this pack is still current, though a broader graduated risk-based registration model has been recommended and is expected to start rolling out from 2027 — recheck ndiscommission.gov.au if you're reading this well after August 2026, and again before any further NDIS Practice Standards or registration changes take effect.</div>
       <div class="dash-grid">
         <div class="stat-tile"><div class="num">${total}</div><div class="lbl">Policies &amp; procedures</div></div>
         <div class="stat-tile"><div class="num">${adopted}</div><div class="lbl">Adopted</div></div>
