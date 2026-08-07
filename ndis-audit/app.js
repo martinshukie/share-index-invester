@@ -3,6 +3,8 @@
 
   const STATUS_KEY = 'ndisAudit.status.v1';
   const SETTINGS_KEY = 'ndisAudit.settings.v1';
+  const REGISTERS_KEY = 'ndisAudit.registers.v1';
+  const CHECKLISTS_KEY = 'ndisAudit.checklists.v1';
   const STATUSES = ['not-started', 'drafted', 'reviewed', 'adopted'];
   const STATUS_LABEL = { 'not-started': 'Not started', drafted: 'Drafted', reviewed: 'Reviewed', adopted: 'Adopted' };
 
@@ -28,6 +30,8 @@
 
   let statusMap = loadJSON(STATUS_KEY, {});
   let settings = loadJSON(SETTINGS_KEY, DEFAULT_SETTINGS);
+  let registers = loadJSON(REGISTERS_KEY, {});
+  let checklists = loadJSON(CHECKLISTS_KEY, {});
 
   function getStatus(key) {
     return statusMap[key] || 'not-started';
@@ -35,6 +39,40 @@
   function setStatus(key, val) {
     statusMap[key] = val;
     saveJSON(STATUS_KEY, statusMap);
+  }
+
+  // ---------- Register (repeatable log) data ----------
+
+  function blankRegisterRow(form) {
+    const row = {};
+    form.columns.forEach((col) => {
+      row[col.key] = col.default ? fillTokens(col.default, settings) : '';
+    });
+    return row;
+  }
+
+  function getRegisterRows(form) {
+    if (!registers[form.id]) {
+      registers[form.id] = (form.seedRows || []).map((seed) => Object.assign(blankRegisterRow(form), seed));
+      saveJSON(REGISTERS_KEY, registers);
+    }
+    return registers[form.id];
+  }
+
+  function saveRegisterRows(formId, rows) {
+    registers[formId] = rows;
+    saveJSON(REGISTERS_KEY, registers);
+  }
+
+  // ---------- Checklist data ----------
+
+  function getChecklistState(formId) {
+    return checklists[formId] || {};
+  }
+
+  function saveChecklistState(formId, state) {
+    checklists[formId] = state;
+    saveJSON(CHECKLISTS_KEY, checklists);
   }
 
   function currentHash() {
@@ -168,17 +206,70 @@
     wireStatusPills();
   }
 
+  function registerTableHtml(f, rows) {
+    const head = '<tr>' + f.columns.map((c) => `<th>${c.label}</th>`).join('') + '<th></th></tr>';
+    const body = rows
+      .map((row, i) => {
+        const cells = f.columns
+          .map((col) => `<td>${fieldInputHtml(col, i, row[col.key])}</td>`)
+          .join('');
+        return `<tr>${cells}<td><button type="button" class="row-remove" data-row="${i}" title="Delete row" aria-label="Delete row">&times;</button></td></tr>`;
+      })
+      .join('');
+    return `<div class="table-scroll"><table class="doc-table form-table"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  }
+
+  function fieldInputHtml(col, rowIndex, value) {
+    const v = value || '';
+    if (col.type === 'textarea') {
+      return `<textarea rows="2" data-row="${rowIndex}" data-key="${col.key}">${escapeHtml(v)}</textarea>`;
+    }
+    if (col.type === 'select') {
+      const opts = ['<option value=""></option>']
+        .concat(col.options.map((o) => `<option value="${escapeHtml(o)}"${o === v ? ' selected' : ''}>${escapeHtml(o)}</option>`))
+        .join('');
+      return `<select data-row="${rowIndex}" data-key="${col.key}">${opts}</select>`;
+    }
+    const type = col.type === 'date' ? 'date' : 'text';
+    return `<input type="${type}" data-row="${rowIndex}" data-key="${col.key}" value="${escapeHtml(v)}" />`;
+  }
+
+  function checklistHtml(f, state) {
+    const items = f.items
+      .map(
+        (label, i) =>
+          `<label class="check-item"><input type="checkbox" data-idx="${i}" ${state[i] ? 'checked' : ''} /> <span>${label}</span></label>`
+      )
+      .join('');
+    return `<div class="checklist">${items}</div>`;
+  }
+
   function renderForm(id) {
     const f = formsById[id];
     if (!f) return renderNotFound();
     const key = `form:${f.id}`;
     const related = (f.policyIds || []).map((pid) => policiesById[pid]).filter(Boolean);
+    const intro = f.intro ? fillTokens(f.intro, settings) : '';
+
+    let interactiveHtml = '';
+    if (f.kind === 'register') {
+      const rows = getRegisterRows(f);
+      interactiveHtml =
+        registerTableHtml(f, rows) + `<button type="button" class="btn" id="add-row" style="margin-top:10px">+ Add entry</button>`;
+    } else if (f.kind === 'checklist') {
+      interactiveHtml =
+        checklistHtml(f, getChecklistState(f.id)) +
+        (f.resettable ? `<button type="button" class="btn" id="reset-checklist" style="margin-top:14px">Reset checklist</button>` : '');
+    } else {
+      interactiveHtml = fillTokens(f.bodyHtml, settings);
+    }
+
     mainEl.innerHTML = `
       <div class="topbar"><button class="btn primary" id="print-doc">Print / Save PDF</button></div>
       <div class="doc-card">
         ${docHeader('Form / Register', fillTokens(f.title, settings), '')}
         ${statusRow(key)}
-        <div class="doc-body">${fillTokens(f.bodyHtml, settings)}</div>
+        <div class="doc-body">${intro}${interactiveHtml}</div>
         ${
           related.length
             ? `<div class="related-forms"><div class="label">Used by policy</div><div class="chip-row">${related
@@ -190,6 +281,59 @@
     mainEl.querySelector('#print-doc').addEventListener('click', () => window.print());
     mainEl.querySelectorAll('.chip[data-route]').forEach((el) => el.addEventListener('click', () => go(el.dataset.route)));
     wireStatusPills();
+
+    if (f.kind === 'register') wireRegisterForm(f);
+    if (f.kind === 'checklist') wireChecklistForm(f);
+  }
+
+  function wireRegisterForm(f) {
+    const rows = getRegisterRows(f);
+    mainEl.querySelectorAll('.form-table [data-row]').forEach((el) => {
+      el.addEventListener('input', () => {
+        const i = Number(el.dataset.row);
+        rows[i][el.dataset.key] = el.value;
+        saveRegisterRows(f.id, rows);
+      });
+      el.addEventListener('change', () => {
+        const i = Number(el.dataset.row);
+        rows[i][el.dataset.key] = el.value;
+        saveRegisterRows(f.id, rows);
+      });
+    });
+    mainEl.querySelectorAll('.row-remove').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        rows.splice(Number(btn.dataset.row), 1);
+        saveRegisterRows(f.id, rows);
+        renderForm(f.id);
+      });
+    });
+    const addBtn = mainEl.querySelector('#add-row');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        rows.push(blankRegisterRow(f));
+        saveRegisterRows(f.id, rows);
+        renderForm(f.id);
+      });
+    }
+  }
+
+  function wireChecklistForm(f) {
+    const state = getChecklistState(f.id);
+    mainEl.querySelectorAll('.checklist input[type="checkbox"]').forEach((cb) => {
+      cb.addEventListener('change', () => {
+        state[cb.dataset.idx] = cb.checked;
+        saveChecklistState(f.id, state);
+      });
+    });
+    const resetBtn = mainEl.querySelector('#reset-checklist');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        if (window.confirm('Clear all checked items on this checklist? (Use this when starting it fresh for a new participant/visit.)')) {
+          saveChecklistState(f.id, {});
+          renderForm(f.id);
+        }
+      });
+    }
   }
 
   function renderOnboard(id) {
@@ -295,6 +439,16 @@
         </div>
         <div class="modal-actions"><button class="btn primary" id="save-settings">Save</button></div>
       </div>
+
+      <h4 style="margin:28px 0 6px">Backup &amp; restore</h4>
+      <p class="empty-hint" style="margin-bottom:14px">Everything you fill in (registers, checklists, provider details, review status) lives only in this browser. If you lose the phone, clear browsing data, or switch devices, it's gone unless you've exported a backup. Do this after any real data-entry session.</p>
+      <div class="doc-card" style="max-width:520px">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center">
+          <button class="btn primary" id="export-data">Export backup (.json)</button>
+          <label class="btn" style="cursor:pointer">Restore from backup&hellip;<input type="file" accept="application/json" id="import-data" style="display:none" /></label>
+        </div>
+        <p class="empty-hint" style="margin-top:12px; margin-bottom:0">Restoring replaces all current data on this device with the backup file's contents.</p>
+      </div>
     `;
     function field(name, label, val) {
       return `<div class="field"><label>${label}</label><input id="f-${name}" value="${val ? String(val).replace(/"/g, '&quot;') : ''}" /></div>`;
@@ -305,6 +459,58 @@
       });
       saveJSON(SETTINGS_KEY, settings);
       go('home');
+    });
+
+    mainEl.querySelector('#export-data').addEventListener('click', () => {
+      const backup = {
+        exportedAt: new Date().toISOString(),
+        app: 'ndis-audit-pack',
+        settings,
+        status: statusMap,
+        registers,
+        checklists,
+      };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `ndis-audit-backup-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    mainEl.querySelector('#import-data').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        let data;
+        try {
+          data = JSON.parse(reader.result);
+        } catch (err) {
+          window.alert('That file is not valid backup JSON.');
+          return;
+        }
+        if (!data || typeof data !== 'object' || data.app !== 'ndis-audit-pack') {
+          window.alert('That does not look like an NDIS Audit Pack backup file.');
+          return;
+        }
+        if (!window.confirm('This replaces all current data on this device with the backup. Continue?')) return;
+        settings = Object.assign({}, DEFAULT_SETTINGS, data.settings || {});
+        statusMap = data.status || {};
+        registers = data.registers || {};
+        checklists = data.checklists || {};
+        saveJSON(SETTINGS_KEY, settings);
+        saveJSON(STATUS_KEY, statusMap);
+        saveJSON(REGISTERS_KEY, registers);
+        saveJSON(CHECKLISTS_KEY, checklists);
+        window.alert('Backup restored.');
+        go('home');
+      };
+      reader.readAsText(file);
     });
   }
 

@@ -16,6 +16,13 @@ function table(headers, rows) {
   return `<table class="doc-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
 }
 
+// Escapes text for safe use inside HTML content or an HTML attribute value.
+function escapeHtml(str) {
+  return String(str == null ? '' : str).replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
 // Replace {{TOKEN}} placeholders with values from a settings object.
 function fillTokens(html, settings) {
   const map = {
