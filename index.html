@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>NDIS Sole Trader Audit Pack</title>
+<meta name="description" content="Policies, procedures, implementation forms, audit synopses and client onboarding documents for an NDIS sole trader Verification audit." />
+<link rel="stylesheet" href="styles.css" />
+
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#2f6b4f" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#14171a" media="(prefers-color-scheme: dark)" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="NDIS Audit" />
+<link rel="icon" href="icons/icon-192.png" sizes="192x192" />
+<link rel="apple-touch-icon" href="icons/icon-180.png" />
+</head>
+<body>
+  <div class="app-shell">
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <h1>NDIS Audit Pack</h1>
+        <div class="sub">Sole trader &middot; Verification pathway</div>
+      </div>
+      <div class="search-box"><input id="search-input" type="text" placeholder="Search documents…" /></div>
+      <div class="nav-scroll" id="sidebar-nav"></div>
+    </nav>
+    <main class="main">
+      <div id="main-content"></div>
+    </main>
+  </div>
+
+  <script src="utils.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
