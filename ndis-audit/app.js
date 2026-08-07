@@ -266,15 +266,15 @@
       </div>
       <h4 style="margin:0 0 10px">Where to start</h4>
       ${ol([
-        'Open <strong>Provider Details</strong> and fill in your business name, ABN and contact info once — it auto-fills every document.',
-        'Work through <strong>Policies &amp; Procedures</strong> by category, mark each Reviewed once you\'ve tailored it, then Adopted once it\'s final.',
-        'Use <strong>Forms, Registers &amp; Templates</strong> as your day-to-day implementation evidence &mdash; print or copy them for real use.',
-        'Give your auditor the <strong>Policy Audit Synopsis</strong> page as a one-glance index.',
-        'Use the <strong>Client Onboarding Checklist</strong> for every new participant, referencing the linked policy at each step.',
+        'Open <span class="inline-link" data-route="settings">Provider Details</span> and fill in your business name, ABN and contact info once — it auto-fills every document.',
+        `Work through <span class="inline-link" data-route="policy:${POLICIES[0].id}">Policies &amp; Procedures</span> by category, mark each Reviewed once you've tailored it, then Adopted once it's final.`,
+        `Use <span class="inline-link" data-route="form:${FORMS[0].id}">Forms, Registers &amp; Templates</span> as your day-to-day implementation evidence &mdash; print or copy them for real use.`,
+        'Give your auditor the <span class="inline-link" data-route="synopsis">Policy Audit Synopsis</span> page as a one-glance index.',
+        'Use the <span class="inline-link" data-route="onboard:onboard-checklist">Client Onboarding Checklist</span> for every new participant, referencing the linked policy at each step.',
       ])}
       <p class="empty-hint" style="margin-top:20px">These are template documents to help you organise for an NDIS Verification audit. They are not legal advice — confirm current requirements against the NDIS Practice Standards and your approved quality auditor before relying on them.</p>
     `;
-    mainEl.querySelectorAll('.chip[data-route]').forEach((el) => el.addEventListener('click', () => go(el.dataset.route)));
+    mainEl.querySelectorAll('[data-route]').forEach((el) => el.addEventListener('click', () => go(el.dataset.route)));
   }
 
   function renderSettings() {
