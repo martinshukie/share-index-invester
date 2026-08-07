@@ -43,9 +43,13 @@
 
   // ---------- Register (repeatable log) data ----------
 
+  function fieldDefs(form) {
+    return form.columns || form.fields;
+  }
+
   function blankRegisterRow(form) {
     const row = {};
-    form.columns.forEach((col) => {
+    fieldDefs(form).forEach((col) => {
       row[col.key] = col.default ? fillTokens(col.default, settings) : '';
     });
     return row;
@@ -91,7 +95,15 @@
     const route = currentHash();
     let html = '';
 
-    html += navSection('Overview', [{ key: 'home', label: 'Audit Readiness Dashboard' }], route, q);
+    html += navSection(
+      'Overview',
+      [
+        { key: 'home', label: 'Audit Readiness Dashboard' },
+        { key: 'records', label: 'Completed Forms & Records' },
+      ],
+      route,
+      q
+    );
 
     // Policies grouped by category
     html += `<div class="nav-section"><div class="nav-section-title">Policies & Procedures</div>`;
@@ -222,16 +234,35 @@
   function fieldInputHtml(col, rowIndex, value) {
     const v = value || '';
     if (col.type === 'textarea') {
-      return `<textarea rows="2" data-row="${rowIndex}" data-key="${col.key}">${escapeHtml(v)}</textarea>`;
+      return `<textarea class="field-input" rows="2" data-row="${rowIndex}" data-key="${col.key}">${escapeHtml(v)}</textarea>`;
     }
     if (col.type === 'select') {
       const opts = ['<option value=""></option>']
         .concat(col.options.map((o) => `<option value="${escapeHtml(o)}"${o === v ? ' selected' : ''}>${escapeHtml(o)}</option>`))
         .join('');
-      return `<select data-row="${rowIndex}" data-key="${col.key}">${opts}</select>`;
+      return `<select class="field-input" data-row="${rowIndex}" data-key="${col.key}">${opts}</select>`;
     }
     const type = col.type === 'date' ? 'date' : 'text';
-    return `<input type="${type}" data-row="${rowIndex}" data-key="${col.key}" value="${escapeHtml(v)}" />`;
+    return `<input class="field-input" type="${type}" data-row="${rowIndex}" data-key="${col.key}" value="${escapeHtml(v)}" />`;
+  }
+
+  function recordCardsHtml(f, rows) {
+    if (!rows.length) return `<p class="empty-hint">No entries yet — tap "+ Add entry" to start one.</p>`;
+    return rows
+      .map((row, i) => {
+        const heading = escapeHtml((f.titleField && row[f.titleField]) || `Entry ${i + 1}`);
+        const fieldsHtml = fieldDefs(f)
+          .map((col) => `<div class="record-field"><label>${col.label}</label>${fieldInputHtml(col, i, row[col.key])}</div>`)
+          .join('');
+        return `<div class="record-card">
+          <div class="record-card-head">
+            <strong data-card-title="${i}">${heading}</strong>
+            <button type="button" class="row-remove" data-row="${i}" title="Delete entry" aria-label="Delete entry">&times;</button>
+          </div>
+          <div class="record-fields">${fieldsHtml}</div>
+        </div>`;
+      })
+      .join('');
   }
 
   function checklistHtml(f, state) {
@@ -244,32 +275,92 @@
     return `<div class="checklist">${items}</div>`;
   }
 
+  // Shared body/wiring for anything with kind 'register' | 'record' | 'checklist' | 'reference'.
+  // `addLabel` customises the "+ Add entry" button text; `rerender` re-draws the whole page
+  // (called after add/remove, where row indices shift).
+  function interactiveBodyHtml(f, addLabel) {
+    const intro = f.intro ? fillTokens(f.intro, settings) : '';
+    if (f.kind === 'register') {
+      const rows = getRegisterRows(f);
+      return intro + registerTableHtml(f, rows) + `<button type="button" class="btn" id="add-row" style="margin-top:10px">+ ${addLabel}</button>`;
+    }
+    if (f.kind === 'record') {
+      const rows = getRegisterRows(f);
+      return intro + `<div class="record-cards">${recordCardsHtml(f, rows)}</div>` + `<button type="button" class="btn" id="add-row" style="margin-top:10px">+ ${addLabel}</button>`;
+    }
+    if (f.kind === 'checklist') {
+      return (
+        intro +
+        checklistHtml(f, getChecklistState(f.id)) +
+        (f.resettable ? `<button type="button" class="btn" id="reset-checklist" style="margin-top:14px">Reset checklist</button>` : '')
+      );
+    }
+    return intro + fillTokens(f.bodyHtml, settings);
+  }
+
+  function wireInteractiveBody(f, rerender) {
+    if (f.kind === 'register' || f.kind === 'record') {
+      const rows = getRegisterRows(f);
+      mainEl.querySelectorAll('.field-input[data-row]').forEach((el) => {
+        const sync = () => {
+          const i = Number(el.dataset.row);
+          rows[i][el.dataset.key] = el.value;
+          saveRegisterRows(f.id, rows);
+          if (f.kind === 'record' && f.titleField && el.dataset.key === f.titleField) {
+            const titleEl = mainEl.querySelector(`[data-card-title="${i}"]`);
+            if (titleEl) titleEl.textContent = el.value || `Entry ${i + 1}`;
+          }
+        };
+        el.addEventListener('input', sync);
+        el.addEventListener('change', sync);
+      });
+      mainEl.querySelectorAll('.row-remove').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          rows.splice(Number(btn.dataset.row), 1);
+          saveRegisterRows(f.id, rows);
+          rerender();
+        });
+      });
+      const addBtn = mainEl.querySelector('#add-row');
+      if (addBtn) {
+        addBtn.addEventListener('click', () => {
+          rows.push(blankRegisterRow(f));
+          saveRegisterRows(f.id, rows);
+          rerender();
+        });
+      }
+    } else if (f.kind === 'checklist') {
+      const state = getChecklistState(f.id);
+      mainEl.querySelectorAll('.checklist input[type="checkbox"]').forEach((cb) => {
+        cb.addEventListener('change', () => {
+          state[cb.dataset.idx] = cb.checked;
+          saveChecklistState(f.id, state);
+        });
+      });
+      const resetBtn = mainEl.querySelector('#reset-checklist');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          if (window.confirm('Clear all checked items on this checklist? (Use this when starting it fresh for a new participant/visit.)')) {
+            saveChecklistState(f.id, {});
+            rerender();
+          }
+        });
+      }
+    }
+  }
+
   function renderForm(id) {
     const f = formsById[id];
     if (!f) return renderNotFound();
     const key = `form:${f.id}`;
     const related = (f.policyIds || []).map((pid) => policiesById[pid]).filter(Boolean);
-    const intro = f.intro ? fillTokens(f.intro, settings) : '';
-
-    let interactiveHtml = '';
-    if (f.kind === 'register') {
-      const rows = getRegisterRows(f);
-      interactiveHtml =
-        registerTableHtml(f, rows) + `<button type="button" class="btn" id="add-row" style="margin-top:10px">+ Add entry</button>`;
-    } else if (f.kind === 'checklist') {
-      interactiveHtml =
-        checklistHtml(f, getChecklistState(f.id)) +
-        (f.resettable ? `<button type="button" class="btn" id="reset-checklist" style="margin-top:14px">Reset checklist</button>` : '');
-    } else {
-      interactiveHtml = fillTokens(f.bodyHtml, settings);
-    }
 
     mainEl.innerHTML = `
       <div class="topbar"><button class="btn primary" id="print-doc">Print / Save PDF</button></div>
       <div class="doc-card">
         ${docHeader('Form / Register', fillTokens(f.title, settings), '')}
         ${statusRow(key)}
-        <div class="doc-body">${intro}${interactiveHtml}</div>
+        <div class="doc-body">${interactiveBodyHtml(f, 'Add entry')}</div>
         ${
           related.length
             ? `<div class="related-forms"><div class="label">Used by policy</div><div class="chip-row">${related
@@ -281,59 +372,7 @@
     mainEl.querySelector('#print-doc').addEventListener('click', () => window.print());
     mainEl.querySelectorAll('.chip[data-route]').forEach((el) => el.addEventListener('click', () => go(el.dataset.route)));
     wireStatusPills();
-
-    if (f.kind === 'register') wireRegisterForm(f);
-    if (f.kind === 'checklist') wireChecklistForm(f);
-  }
-
-  function wireRegisterForm(f) {
-    const rows = getRegisterRows(f);
-    mainEl.querySelectorAll('.form-table [data-row]').forEach((el) => {
-      el.addEventListener('input', () => {
-        const i = Number(el.dataset.row);
-        rows[i][el.dataset.key] = el.value;
-        saveRegisterRows(f.id, rows);
-      });
-      el.addEventListener('change', () => {
-        const i = Number(el.dataset.row);
-        rows[i][el.dataset.key] = el.value;
-        saveRegisterRows(f.id, rows);
-      });
-    });
-    mainEl.querySelectorAll('.row-remove').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        rows.splice(Number(btn.dataset.row), 1);
-        saveRegisterRows(f.id, rows);
-        renderForm(f.id);
-      });
-    });
-    const addBtn = mainEl.querySelector('#add-row');
-    if (addBtn) {
-      addBtn.addEventListener('click', () => {
-        rows.push(blankRegisterRow(f));
-        saveRegisterRows(f.id, rows);
-        renderForm(f.id);
-      });
-    }
-  }
-
-  function wireChecklistForm(f) {
-    const state = getChecklistState(f.id);
-    mainEl.querySelectorAll('.checklist input[type="checkbox"]').forEach((cb) => {
-      cb.addEventListener('change', () => {
-        state[cb.dataset.idx] = cb.checked;
-        saveChecklistState(f.id, state);
-      });
-    });
-    const resetBtn = mainEl.querySelector('#reset-checklist');
-    if (resetBtn) {
-      resetBtn.addEventListener('click', () => {
-        if (window.confirm('Clear all checked items on this checklist? (Use this when starting it fresh for a new participant/visit.)')) {
-          saveChecklistState(f.id, {});
-          renderForm(f.id);
-        }
-      });
-    }
+    wireInteractiveBody(f, () => renderForm(id));
   }
 
   function renderOnboard(id) {
@@ -345,10 +384,12 @@
       <div class="doc-card">
         ${docHeader('Client Onboarding', fillTokens(o.title, settings), '')}
         ${statusRow(key)}
-        <div class="doc-body">${fillTokens(o.bodyHtml, settings)}</div>
+        <div class="doc-body">${interactiveBodyHtml(o, 'Add participant')}</div>
       </div>`;
     mainEl.querySelector('#print-doc').addEventListener('click', () => window.print());
+    mainEl.querySelectorAll('.chip[data-route]').forEach((el) => el.addEventListener('click', () => go(el.dataset.route)));
     wireStatusPills();
+    wireInteractiveBody(o, () => renderOnboard(id));
   }
 
   function synopsisCard(p) {
@@ -381,6 +422,60 @@
       <h2 class="doc-title">Synopsis: ${fillTokens(p.title, settings)}</h2>
       <div class="synopsis-grid">${synopsisCard(p)}</div>`;
     mainEl.querySelectorAll('.chip[data-route]').forEach((el) => el.addEventListener('click', () => go(el.dataset.route)));
+  }
+
+  function fillProgress(item) {
+    if (item.kind === 'register' || item.kind === 'record') {
+      const n = getRegisterRows(item).length;
+      return { text: n === 0 ? 'No entries yet' : `${n} ${n === 1 ? 'entry' : 'entries'}`, state: n === 0 ? 'empty' : 'filled' };
+    }
+    if (item.kind === 'checklist') {
+      const state = getChecklistState(item.id);
+      const checked = item.items.filter((_, i) => state[i]).length;
+      return { text: `${checked} of ${item.items.length} checked`, state: checked === 0 ? 'empty' : checked === item.items.length ? 'filled' : 'partial' };
+    }
+    return { text: 'Reference only', state: 'ref' };
+  }
+
+  function recordsRow(title, route, progress) {
+    return `<div class="records-row" data-route="${route}">
+      <span class="records-row-title">${title}</span>
+      <span class="records-row-status ${progress.state}">${progress.text}</span>
+    </div>`;
+  }
+
+  function recordsSection(title, items, routePrefix) {
+    if (!items.length) return '';
+    const rows = items.map((item) => recordsRow(fillTokens(item.title, settings), `${routePrefix}:${item.id}`, fillProgress(item))).join('');
+    return `<div class="records-section"><h4>${title}</h4><div class="records-list">${rows}</div></div>`;
+  }
+
+  function renderRecords() {
+    const byCategory = CATEGORIES.map((cat) => {
+      const formsInCat = FORMS.filter((f) => {
+        const p = (f.policyIds || []).map((pid) => policiesById[pid]).find(Boolean);
+        return p && p.category === cat;
+      });
+      return recordsSection(cat, formsInCat, 'form');
+    }).join('');
+
+    const uncategorized = FORMS.filter((f) => {
+      const p = (f.policyIds || []).map((pid) => policiesById[pid]).find(Boolean);
+      return !p;
+    });
+    const onboardItems = [...ONBOARDING].sort((a, b) => a.order - b.order);
+
+    mainEl.innerHTML = `
+      <div class="doc-eyebrow">Overview</div>
+      <h2 class="doc-title">Completed Forms &amp; Records</h2>
+      <p class="empty-hint" style="margin-bottom:20px">Everything you've actually filled in, grouped the same way as Policies &amp; Procedures, so you can see what's done without opening every form one by one. Tap any row to jump straight to it.</p>
+      <div class="records-grid">
+        ${byCategory}
+        ${recordsSection('Other', uncategorized, 'form')}
+        ${recordsSection('Client Onboarding', onboardItems, 'onboard')}
+      </div>
+    `;
+    mainEl.querySelectorAll('.records-row[data-route]').forEach((el) => el.addEventListener('click', () => go(el.dataset.route)));
   }
 
   function renderHome() {
@@ -533,6 +628,7 @@
     renderSidebar(searchInput.value);
     const [type, id] = r.split(':');
     if (r === 'home') renderHome();
+    else if (r === 'records') renderRecords();
     else if (r === 'settings') renderSettings();
     else if (r === 'synopsis') renderSynopsisAll();
     else if (type === 'synopsis') renderSynopsisOne(id);
