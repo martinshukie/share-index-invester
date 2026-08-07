@@ -233,6 +233,15 @@ a { color: var(--accent); }
 }
 .chip:hover { border-color: var(--accent); color: var(--accent); }
 
+.inline-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.inline-link:hover { opacity: 0.8; }
+
 .synopsis-grid { display: grid; grid-template-columns: 1fr; gap: 16px; max-width: 900px; }
 .synopsis-card {
   background: var(--panel);
