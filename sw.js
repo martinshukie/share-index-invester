@@ -1,6 +1,8 @@
-// Caches the app shell so it keeps working offline once opened at least once.
-// Bump CACHE_NAME whenever the cached files change so clients pick up the update.
-const CACHE_NAME = 'ndis-audit-v1';
+// Network-first: always tries to fetch the latest version when online, and
+// only falls back to the cached copy when there's no network (offline use).
+// This means updates show up automatically next time the phone is online —
+// no manual cache-busting needed on future deploys.
+const CACHE_NAME = 'ndis-audit-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -32,17 +34,16 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200 && response.type === 'basic') {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => cached);
-    })
+    // cache: 'no-store' forces a real network round-trip instead of letting
+    // the browser's own HTTP cache silently serve a stale response.
+    fetch(event.request, { cache: 'no-store' })
+      .then((response) => {
+        if (response && response.status === 200 && response.type === 'basic') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
