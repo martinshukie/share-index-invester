@@ -246,6 +246,33 @@
     return `<input class="field-input" type="${type}" data-row="${rowIndex}" data-key="${col.key}" value="${escapeHtml(v)}" />`;
   }
 
+  // Transient (not persisted) — which rows are currently showing an open
+  // signature pad rather than their saved-signature preview.
+  const signingRows = {};
+  function sigKey(formId, rowIndex) {
+    return `${formId}:${rowIndex}`;
+  }
+
+  function signatureBlockHtml(f, i, row) {
+    const key = sigKey(f.id, i);
+    const sig = row.__sig;
+    if (sig && sig.dataUrl && !signingRows[key]) {
+      return `<div class="sig-block">
+        <label>Client signature</label>
+        <img class="sig-preview" src="${sig.dataUrl}" alt="Captured signature" />
+        <div class="sig-actions"><button type="button" class="btn" data-resign="${i}">Re-sign</button></div>
+      </div>`;
+    }
+    return `<div class="sig-block">
+      <label>Client signature — sign with finger/stylus below</label>
+      <canvas class="sig-pad" data-row="${i}" width="600" height="200"></canvas>
+      <div class="sig-actions">
+        <button type="button" class="btn" data-sig-clear="${i}">Clear</button>
+        <button type="button" class="btn primary" data-sig-save="${i}">Save signature</button>
+      </div>
+    </div>`;
+  }
+
   function recordCardsHtml(f, rows) {
     if (!rows.length) return `<p class="empty-hint">No entries yet — tap "+ Add entry" to start one.</p>`;
     return rows
@@ -260,9 +287,61 @@
             <button type="button" class="row-remove" data-row="${i}" title="Delete entry" aria-label="Delete entry">&times;</button>
           </div>
           <div class="record-fields">${fieldsHtml}</div>
+          ${f.signable ? signatureBlockHtml(f, i, row) : ''}
+          <div class="record-actions">
+            <button type="button" class="btn" data-word="${i}">Download Word (.docx)</button>
+            ${f.signable ? `<button type="button" class="btn" data-share="${i}">Share / email to client</button>` : ''}
+          </div>
         </div>`;
       })
       .join('');
+  }
+
+  function docxMetaLines() {
+    const lines = [];
+    if (settings.businessName) lines.push(['Business', settings.businessName]);
+    if (settings.providerName) lines.push(['Provider', settings.providerName]);
+    if (settings.abn) lines.push(['ABN', settings.abn]);
+    return lines;
+  }
+
+  function slugify(str) {
+    return String(str || 'document')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') || 'document';
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function buildEntryDocx(f, row) {
+    const participant = f.titleField ? row[f.titleField] : '';
+    const title = participant ? `${fillTokens(f.title, settings)} — ${participant}` : fillTokens(f.title, settings);
+    const fields = fieldDefs(f).map((col) => [col.label, row[col.key]]);
+    const today = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+    let signature = null;
+    if (f.signable) {
+      signature = {
+        dataUrl: row.__sig ? row.__sig.dataUrl : null,
+        width: row.__sig ? row.__sig.width : 3,
+        height: row.__sig ? row.__sig.height : 1,
+        participantName: participant,
+        providerName: settings.providerName,
+        date: today,
+      };
+    }
+    const blob = buildDocxBlob({ title, meta: docxMetaLines(), fields, signature });
+    const filename = `${slugify(f.title)}-${slugify(participant || 'entry')}.docx`;
+    return { blob, filename, title };
   }
 
   function checklistHtml(f, state) {
@@ -329,6 +408,7 @@
           rerender();
         });
       }
+      if (f.kind === 'record') wireRecordCardExtras(f, rows, rerender);
     } else if (f.kind === 'checklist') {
       const state = getChecklistState(f.id);
       mainEl.querySelectorAll('.checklist input[type="checkbox"]').forEach((cb) => {
@@ -347,6 +427,98 @@
         });
       }
     }
+  }
+
+  function initSignaturePad(canvas) {
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    let drawing = false;
+
+    function pos(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: ((e.clientX - rect.left) / rect.width) * canvas.width,
+        y: ((e.clientY - rect.top) / rect.height) * canvas.height,
+      };
+    }
+    canvas.addEventListener('pointerdown', (e) => {
+      drawing = true;
+      canvas.setPointerCapture(e.pointerId);
+      const p = pos(e);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!drawing) return;
+      const p = pos(e);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach((evt) =>
+      canvas.addEventListener(evt, () => {
+        drawing = false;
+      })
+    );
+  }
+
+  function wireRecordCardExtras(f, rows, rerender) {
+    mainEl.querySelectorAll('.sig-pad').forEach((canvas) => initSignaturePad(canvas));
+
+    mainEl.querySelectorAll('[data-sig-clear]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const canvas = mainEl.querySelector(`.sig-pad[data-row="${btn.dataset.sigClear}"]`);
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      });
+    });
+
+    mainEl.querySelectorAll('[data-sig-save]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.sigSave);
+        const canvas = mainEl.querySelector(`.sig-pad[data-row="${i}"]`);
+        rows[i].__sig = { dataUrl: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height };
+        saveRegisterRows(f.id, rows);
+        signingRows[sigKey(f.id, i)] = false;
+        rerender();
+      });
+    });
+
+    mainEl.querySelectorAll('[data-resign]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        signingRows[sigKey(f.id, Number(btn.dataset.resign))] = true;
+        rerender();
+      });
+    });
+
+    mainEl.querySelectorAll('[data-word]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const { blob, filename } = buildEntryDocx(f, rows[Number(btn.dataset.word)]);
+        downloadBlob(blob, filename);
+      });
+    });
+
+    mainEl.querySelectorAll('[data-share]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const { blob, filename, title } = buildEntryDocx(f, rows[Number(btn.dataset.share)]);
+        const file = new File([blob], filename, { type: blob.type });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title, text: title });
+          } catch (err) {
+            if (err && err.name !== 'AbortError') downloadBlob(blob, filename);
+          }
+        } else {
+          downloadBlob(blob, filename);
+          window.alert('Your browser can\'t share files directly, so the Word file has been downloaded instead — attach it to an email or message to send it to your client.');
+        }
+      });
+    });
   }
 
   function renderForm(id) {
