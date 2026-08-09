@@ -2,12 +2,13 @@
 // only falls back to the cached copy when there's no network (offline use).
 // This means updates show up automatically next time the phone is online —
 // no manual cache-busting needed on future deploys.
-const CACHE_NAME = 'ndis-audit-v2';
+const CACHE_NAME = 'ndis-audit-v3';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './utils.js',
+  './docx.js',
   './data.js',
   './app.js',
   './manifest.webmanifest',

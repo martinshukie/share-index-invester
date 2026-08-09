@@ -283,6 +283,33 @@ a { color: var(--accent); }
 .record-field textarea { min-height: 44px; resize: vertical; }
 .record-field .field-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
+.record-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+
+.sig-block { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.sig-block > label { display: block; font-size: 11.5px; color: var(--ink-soft); margin-bottom: 6px; }
+.sig-pad {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  height: 160px;
+  border: 1px dashed var(--ink-soft);
+  border-radius: 8px;
+  background: #fff;
+  touch-action: none;
+  cursor: crosshair;
+}
+.sig-preview {
+  display: block;
+  max-width: 320px;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px;
+}
+.sig-actions { display: flex; gap: 8px; margin-top: 8px; }
+
 .checklist { display: flex; flex-direction: column; gap: 10px; margin: 10px 0; }
 .check-item {
   display: flex;
@@ -434,9 +461,11 @@ a { color: var(--accent); }
 }
 
 @media print {
-  .sidebar, .topbar, .status-row, .related-forms, #add-row, #reset-checklist, .row-remove { display: none !important; }
+  .sidebar, .topbar, .status-row, .related-forms, #add-row, #reset-checklist, .row-remove,
+  .record-actions, .sig-actions { display: none !important; }
   .main { overflow: visible; padding: 0; }
   .doc-card { box-shadow: none; border: none; max-width: 100%; }
   body { background: #fff; }
-  .form-table input, .form-table select, .form-table textarea { border-color: #999; }
+  .form-table input, .form-table select, .form-table textarea,
+  .record-field input, .record-field select, .record-field textarea { border-color: #999; }
 }

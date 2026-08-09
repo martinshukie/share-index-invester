@@ -754,9 +754,9 @@ const FORMS = [
       { key: 'backupArrangement', label: 'Backup support arrangement', type: 'textarea' },
     ] },
   { id: 'privacy-consent', title: 'Privacy Consent & Information Sharing Form', policyIds: ['privacy-records'],
-    kind: 'register',
+    kind: 'record', titleField: 'participant', signable: true,
     intro: `<p>I consent to {{BUSINESS_NAME}} collecting, storing and using my personal and health information to plan and deliver my supports, and to share relevant information with the people/organisations ticked below. (Sharing with the NDIS Quality and Safeguards Commission is required by law regardless of consent.)</p>`,
-    columns: [
+    fields: [
       { key: 'participant', label: 'Participant', type: 'text' },
       { key: 'dateSigned', label: 'Date signed', type: 'date' },
       { key: 'shareCoordinator', label: 'Share with support coordinator?', type: 'select', options: ['Yes', 'No'] },
@@ -817,9 +817,9 @@ const FORMS = [
         ]) +
       `<p>If unsure which timeframe applies, use 24 hours. Submit the initial notification via the NDIS Commission Portal by the applicable deadline, then the detailed written report within 5 business days of the initial notification. These categories and timeframes are set by the NDIS Commission — reconfirm at ndiscommission.gov.au if it has been a while since this checklist was last reviewed.</p>` },
   { id: 'restrictive-practice-declaration', title: 'Restrictive Practice Statement / Nil Use Declaration', policyIds: ['restrictive-practices'],
-    kind: 'register',
+    kind: 'record', titleField: 'participant', signable: true,
     intro: `<p>{{BUSINESS_NAME}} confirms that no restrictive practices (seclusion, chemical, mechanical, physical or environmental restraint, or restriction of access to objects) are used in the supports provided, except where authorised under an NDIS Behaviour Support Plan prepared by a specialist behaviour support practitioner. Log each participant this has been declared to.</p>`,
-    columns: [
+    fields: [
       { key: 'participant', label: 'Participant', type: 'text' },
       { key: 'dateSigned', label: 'Date signed', type: 'date' },
     ] },
@@ -956,7 +956,7 @@ const ONBOARDING = [
       { key: 'nextReview', label: 'Next review date', type: 'date' },
     ] },
   { id: 'onboard-service-agreement', title: 'Service Agreement Template (Sole Trader NDIS)', order: 5,
-    kind: 'record', titleField: 'participant',
+    kind: 'record', titleField: 'participant', signable: true,
     intro: `<p>Agreement between {{BUSINESS_NAME}} (ABN {{ABN}}) ("the Provider") and the participant named below ("the Participant"), for the provision of NDIS-funded supports.</p>`,
     fields: [
       { key: 'participant', label: 'Participant name', type: 'text' },
