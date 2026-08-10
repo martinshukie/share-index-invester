@@ -64,14 +64,9 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
         <h3>{title}</h3>
         {status && (
           <p className={`mode-badge ${status.isLive ? "mode-badge--live" : "mode-badge--paper"}`}>
-            {status.isLive ? "🔴 LIVE — REAL MONEY" : "🟢 Paper trading — simulated money"}
+            {status.isLive ? "🔴 LIVE — REAL MONEY" : "🟢 Paper — simulated money"}
           </p>
         )}
-        <p>
-          {status?.isLive
-            ? "This account is trading with real money. All the same logic applies, but gains and losses here are real."
-            : "Connected to a real Alpaca paper-trading account. No real money is involved anywhere here — trades execute against real market prices with simulated funds."}
-        </p>
       </div>
 
       {error && <p className="portfolio__error">{error}</p>}
@@ -80,29 +75,6 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
       {status && (
         <>
           <div className="portfolio__result">
-            <div>
-              <div className="portfolio__stat-label">Cash used</div>
-              <div className="portfolio__stat-value">
-                {status.totalHoldingsValue != null ? `$${status.totalHoldingsValue.toFixed(2)}` : "—"}
-              </div>
-              {aud(status.totalHoldingsValue) && (
-                <div className="portfolio__stat-aud">{aud(status.totalHoldingsValue)}</div>
-              )}
-            </div>
-            <div>
-              <div className="portfolio__stat-label">Strategy banked</div>
-              <div className="portfolio__stat-value up">
-                {status.strategyBanked != null ? `$${status.strategyBanked.toFixed(2)}` : "—"}
-              </div>
-              {aud(status.strategyBanked) && <div className="portfolio__stat-aud">{aud(status.strategyBanked)}</div>}
-            </div>
-            <div>
-              <div className="portfolio__stat-label">Total wealth</div>
-              <div className="portfolio__stat-value up">
-                {status.strategyWealth != null ? `$${status.strategyWealth.toFixed(2)}` : "—"}
-              </div>
-              {aud(status.strategyWealth) && <div className="portfolio__stat-aud">{aud(status.strategyWealth)}</div>}
-            </div>
             <div>
               <div className="portfolio__stat-label">Today</div>
               {status.dailyChange != null ? (

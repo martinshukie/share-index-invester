@@ -4,8 +4,6 @@ import { ASSETS, RANGES, TRADE_BASKET, AI_BASKET, TRADABLE_SYMBOL, fetchQuote } 
 import TickerTape from "./components/TickerTape";
 import PriceChart from "./components/PriceChart";
 import HoldingsScreen from "./components/HoldingsScreen";
-import Portfolio from "./components/Portfolio";
-import CombinedCycleStrategy from "./components/CombinedCycleStrategy";
 import PaperTrading from "./components/PaperTrading";
 import AssetTable from "./components/AssetTable";
 import ManageStocks from "./components/ManageStocks";
@@ -143,27 +141,21 @@ export default function App() {
         )}
 
         <h2 className="section-heading">Main basket — gold, oil &amp; equities</h2>
-        <CombinedCycleStrategy range={range} basketKey="main" title="Main basket strategy (tiered)" />
         <BankScaleControl basket="main" title="Main basket bank sensitivity" />
-        <PaperTrading basket="main" title="Main basket — paper trading account" />
+        <PaperTrading basket="main" title="Main basket — account" />
         <AssetTable basket="main" symbols={TRADE_BASKET.map((a) => a.symbol)} />
         <ManageStocks basket="main" title="Manage main basket stocks" />
 
         <h2 className="section-heading">AI basket — separate strategy</h2>
-        <CombinedCycleStrategy range={range} basketKey="ai" title="AI basket strategy (tiered)" />
         <BankScaleControl basket="ai" title="AI basket bank sensitivity" />
-        <PaperTrading basket="ai" title="AI basket — paper trading account" />
+        <PaperTrading basket="ai" title="AI basket — account" />
         <AssetTable basket="ai" symbols={AI_BASKET.map((a) => a.symbol)} />
         <ManageStocks basket="ai" title="Manage AI basket stocks" />
-
-        <Portfolio range={range} />
       </main>
 
       <footer className="app__footer">
-        Educational / research tool only — not financial advice. Prices are delayed, free-tier
-        market data. Not connected to any real bank account — "Add funds" only affects the
-        simulated paper trading balance. The main and AI baskets run as fully independent
-        strategies with separate banked totals.
+        Prices are delayed, free-tier market data. The main and AI baskets run as fully
+        independent strategies with separate banked totals.
       </footer>
     </div>
   );
