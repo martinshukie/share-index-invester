@@ -5,9 +5,6 @@ import { useUsdToAud, formatAud } from "../useUsdToAud";
 export default function PaperTrading({ basket = "main", title = "Paper trading account (live, simulated money)" }) {
   const [status, setStatus] = useState(null);
   const [error, setError] = useState(null);
-  const [amount, setAmount] = useState("250");
-  const [addFundsResult, setAddFundsResult] = useState(null);
-  const [addingFunds, setAddingFunds] = useState(false);
   const [typedSecret, setTypedSecret] = useState("");
   const [resetting, setResetting] = useState(false);
   const [resetResult, setResetResult] = useState(null);
@@ -34,31 +31,6 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
     const id = setInterval(load, 60000);
     return () => clearInterval(id);
   }, [load]);
-
-  async function addFunds() {
-    const secret = ts.secret;
-    if (!secret || !amount) return;
-    setAddingFunds(true);
-    setAddFundsResult(null);
-    try {
-      const res = await fetch(
-        `/api/add-funds?secret=${encodeURIComponent(secret)}&amount=${encodeURIComponent(amount)}&basket=${basket}`
-      );
-      const data = await res.json();
-      if (data.error) setAddFundsResult({ ok: false, message: data.error });
-      else
-        setAddFundsResult({
-          ok: true,
-          message: `Added $${data.amount} — split $${data.perAsset.toFixed(2)} across ${
-            data.orders.length
-          } assets.`,
-        });
-    } catch (e) {
-      setAddFundsResult({ ok: false, message: "Request failed." });
-    } finally {
-      setAddingFunds(false);
-    }
-  }
 
   async function resetBasket() {
     const secret = ts.secret;
@@ -173,7 +145,7 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
       )}
 
       <div className="add-funds">
-        <h4>{status?.isLive ? "Add funds" : "Add funds (simulated)"}</h4>
+        <h4>{status?.isLive ? "Funding" : "Funding (simulated)"}</h4>
 
         {status?.isLive ? (
           <>
@@ -194,8 +166,9 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
           </>
         ) : (
           <p className="add-funds__note">
-            This is not a real bank connection — it adds simulated money to this basket only,
-            split evenly across it.
+            This is not a real bank connection — this basket's simulated cash pool is unlimited.
+            Use the Assets table below to manually choose which asset to buy and how much,
+            instead of splitting evenly across the whole basket.
           </p>
         )}
 
@@ -224,31 +197,6 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
           <button className="btn" disabled={ts.busy} onClick={() => ts.unlock()}>
             {ts.busy ? "Checking…" : "🔓 Unlock with biometric"}
           </button>
-        )}
-
-        {!status?.isLive && ts.hasSaved && ts.secret && (
-          <>
-            <input
-              type="number"
-              placeholder="Amount (USD)"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="add-funds__input"
-            />
-            {aud(parseFloat(amount)) && (
-              <p className="add-funds__note" style={{ marginTop: -6 }}>
-                ${amount} USD ≈ {aud(parseFloat(amount))}
-              </p>
-            )}
-            <button className="btn" onClick={addFunds} disabled={addingFunds || !amount}>
-              {addingFunds ? "Adding…" : "Add funds"}
-            </button>{" "}
-            {addFundsResult && (
-              <p className={addFundsResult.ok ? "portfolio__stat-value up" : "portfolio__error"}>
-                {addFundsResult.message}
-              </p>
-            )}
-          </>
         )}
 
         {ts.hasSaved && ts.secret && (
