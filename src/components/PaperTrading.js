@@ -115,7 +115,19 @@ export default function PaperTrading({ basket = "main", title = "Paper trading a
                 <div className="portfolio__stat-value">—</div>
               )}
             </div>
+            <div>
+              <div className="portfolio__stat-label">Available cash</div>
+              <div className="portfolio__stat-value">
+                {status.cash != null ? `$${status.cash.toFixed(2)}` : "—"}
+              </div>
+              {aud(status.cash) && <div className="portfolio__stat-aud">{aud(status.cash)}</div>}
+            </div>
           </div>
+          <p className="add-funds__note" style={{ marginTop: 10 }}>
+            Available cash is the whole Alpaca account's uninvested balance, shared across both
+            baskets (and MrCrypto) — it's not specific to this basket, and it's what "Add to
+            fund" in the Assets table below draws from.
+          </p>
           {usdToAud != null && (
             <p className="add-funds__note" style={{ marginTop: 10 }}>
               All trading is in USD (Alpaca is a US brokerage) — AUD figures are a live reference
